@@ -1,0 +1,18 @@
+{
+  "name": "@nereid/sql_to_ts",
+  "private": true,
+  "version": "2.0.0",
+  "description": "Convert .sql files to .sql.ts files",
+  "bin": {
+    "sql_to_ts": "./bin/sql_to_ts.js"
+  },
+  "scripts": {
+    "build": "tsc",
+    "lint": "eslint src --ext .js,.jsx,.ts,.tsx,.vue"
+  },
+  "author": "Cliff Hammerschmidt",
+  "license": "MIT",
+  "dependencies": {
+    "@nereid/nodemain": "^0.1.0"
+  }
+}

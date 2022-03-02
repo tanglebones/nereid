@@ -1,0 +1,22 @@
+{
+  "name": "@nereid/nodesrv_pgdb",
+  "private": true,
+  "version": "0.1.0",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "license": "MIT",
+  "scripts": {
+    "sql_to_ts": "sql_to_ts",
+    "build": "tsc",
+    "test": "mocha",
+    "cover": "nyc mocha",
+    "lint": "eslint src --ext .js,.jsx,.ts,.tsx",
+    "doc": "npx typedoc src/*.ts src/**/*.ts --out dist/doc"
+  },
+  "dependencies": {
+    "@nereid/nodecore": "*"
+  },
+  "devDependencies": {
+    "@nereid/sql_to_ts": "*"
+  }
+}

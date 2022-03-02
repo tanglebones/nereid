@@ -1,0 +1,23 @@
+{
+  "extends": "../../cfg/cfg_ts/tsconfig.json",
+  "include": [
+    "src/**/*.ts"
+  ],
+  "compilerOptions": {
+    "outDir": "dist",
+    "rootDir": "src"
+  },
+  "exclude": [
+    "dist",
+    "build",
+    "node_modules"
+  ],
+  "references": [
+    {
+      "path": "../../lib/nodecore"
+    },
+    {
+      "path": "../../lib/anycore"
+    }
+  ]
+}

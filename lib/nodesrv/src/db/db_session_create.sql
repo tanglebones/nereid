@@ -1,4 +1,4 @@
 INSERT INTO
-  "session"
+  session
 DEFAULT VALUES
-RETURNING encode(session_id, 'hex') AS session_id, data;
+RETURNING encode(session_id, 'hex') AS session_id;

@@ -1,20 +1,18 @@
-import {dbProviderType} from './db_provider';
+import {dbProviderType, dbType} from './db_provider.type';
 import {value as createSql} from './db_session_create_sql';
 import {value as deleteSql} from './db_session_delete_sql';
 import {value as expireSql} from './db_session_expire_sql';
-import {value as updateClientSql} from './db_session_update_client_sql';
-import {value as updateStaffSql} from './db_session_update_staff_sql';
-import {value as verifyClientSql} from './db_session_verify_client_sql';
-import {value as verifyStaffSql} from './db_session_verify_staff_sql';
+import {value as updateSql} from './db_session_update_sql';
+import {value as verifySql} from './db_session_verify_sql';
 import debugCtor = require('debug');
 import {ctxSetDb} from '../ctx';
-import {serializableType} from 'ts_agnostic';
+import {serializableType} from '@nereid/anycore';
 import {ctxBaseType} from '../server.type';
 
 const debug = debugCtor('db:session');
 
 export async function sessionCreate(ctx: Pick<ctxBaseType, 'sessionId' | 'session' | 'dbProvider' | 'db'>): Promise<void> {
-  return ctx.dbProvider('-SESSION-', async (db) => {
+  return ctx.dbProvider('-SESSION-', async (db: dbType) => {
     const result: { session_id?: string } = await db.one(createSql);
     debug(`create result: ${JSON.stringify(result)}`);
     if (!result.session_id) {
@@ -27,17 +25,17 @@ export async function sessionCreate(ctx: Pick<ctxBaseType, 'sessionId' | 'sessio
 }
 
 export async function sessionVerify(ctx: Pick<ctxBaseType, 'sessionId' | 'session' | 'dbProvider' | 'user' | 'db' | 'settings'>): Promise<void> {
-  if (ctx.sessionId === '') {
+  if (!ctx.sessionId) {
     await sessionCreate(ctx);
   }
-  return ctx.dbProvider('-SESSION-', async (db) => {
+  return ctx.dbProvider('-SESSION-', async (db: dbType) => {
     const result: {
       login: string,
       data: Record<string, serializableType>,
       client_profile_id?: string,
       federated_login_id?: string
-    } | null = await db.oneOrNone(
-      ctx.settings.mode === 'client' ? verifyClientSql : verifyStaffSql,
+    } | undefined = await db.oneOrNone(
+      verifySql,
       {
         sessionId: ctx.sessionId,
       },
@@ -62,38 +60,24 @@ export async function sessionVerify(ctx: Pick<ctxBaseType, 'sessionId' | 'sessio
 }
 
 export async function sessionUpdate(ctx: Pick<ctxBaseType, 'sessionId' | 'session' | 'dbProvider' | 'user' | 'settings'>): Promise<void> {
-  if (ctx.sessionId === '') {
+  if (!ctx.sessionId) {
     return;
   }
 
-  return ctx.dbProvider('-SESSION-', async (db) => {
-    if (ctx.settings.mode === 'client') {
-      const result = await db.result(
-        updateClientSql,
-        {
-          sessionId: ctx.sessionId,
-          data: ctx.session,
-          login: ctx?.user?.login,
-          clientProfileId: ctx?.user?.clientProfileId,
-          federatedLoginId: ctx?.user?.federatedLoginId,
-        },
-      );
-      debug(`update result: ${JSON.stringify(result)}`);
-    }
-    if (ctx.settings.mode === 'staff') {
-      const result = await db.result(
-        updateStaffSql,
-        {
-          sessionId: ctx.sessionId,
-          data: ctx.session,
-          login: ctx?.user?.login,
-        },
-      );
-      debug(`update result: ${JSON.stringify(result)}`);
-    }
+  return ctx.dbProvider('-SESSION-', async (db: dbType) => {
+    const result = await db.result(
+      updateSql,
+      {
+        sessionId: ctx.sessionId,
+        data: ctx.session,
+        login: ctx?.user?.login,
+        clientProfileId: ctx?.user?.clientProfileId,
+        federatedLoginId: ctx?.user?.federatedLoginId,
+      },
+    );
+    debug(`update result: ${JSON.stringify(result)}`);
   }, ctx.sessionId);
 }
-
 
 export async function sessionDelete(ctx: { sessionId: string, dbProvider: dbProviderType }): Promise<void> {
   return ctx.dbProvider('-SESSION-', async (db) => {

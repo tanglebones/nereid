@@ -1,1 +1,1 @@
-DELETE FROM "session" WHERE expire_at < current_timestamp;
+delete from session where expire_at < stime_now();

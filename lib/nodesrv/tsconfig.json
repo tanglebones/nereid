@@ -15,6 +15,9 @@
   "references": [
     {
       "path": "../nodecore"
+    },
+    {
+      "path": "../anycore"
     }
   ]
 }

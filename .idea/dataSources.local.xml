@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="dataSourceStorageLocal" created-in="WS-213.6777.57">
+    <data-source name="PostgreSQL - postgres@localhost" uuid="c9cf0c0a-79af-4a02-9f72-12c157112166">
+      <database-info product="PostgreSQL" version="14.2" jdbc-version="4.2" driver-name="PostgreSQL JDBC Driver" driver-version="42.2.22" dbms="POSTGRES" exact-version="14.2" exact-driver-version="42.2">
+        <identifier-quote-string>&quot;</identifier-quote-string>
+      </database-info>
+      <case-sensitivity plain-identifiers="lower" quoted-identifiers="exact" />
+      <secret-storage>master_key</secret-storage>
+      <user-name>eg_dba</user-name>
+      <schema-mapping>
+        <introspection-scope>
+          <node kind="database" qname="eg">
+            <node kind="schema">
+              <name qname="app" />
+              <name qname="func" />
+              <name qname="meta" />
+              <name qname="staff" />
+            </node>
+          </node>
+        </introspection-scope>
+      </schema-mapping>
+    </data-source>
+  </component>
+</project>

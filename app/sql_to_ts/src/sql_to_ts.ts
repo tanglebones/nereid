@@ -24,7 +24,7 @@ main(async () => {
       continue;
     }
 
-    const g = f.replace(/\.sql$/, ".sql.ts");
+    const g = f.replace(/\.sql$/, "_sql.ts");
     let contents: string = fs.readFileSync(f, "utf8");
     contents = contents.replace("`", "\\`");
     contents = contents.replace("${", "\\${");

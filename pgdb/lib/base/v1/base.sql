@@ -14,6 +14,7 @@
 \set user_ro_staff :db_name:postfix
 
 set search_path = func;
+\i ../../stime/v1/index.sql
 \i ../../util/v2/index.sql
 \i ../../tuid/v6/index.sql
 \i ../../upsert/v2/index.sql

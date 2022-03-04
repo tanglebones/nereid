@@ -11,39 +11,41 @@ import {
   wsHandlerType,
 } from './server.type';
 import {IncomingMessage, Server} from 'http';
-import * as WebSocket from 'ws';
+import WebSocket from 'ws';
 import {Socket} from 'net';
 import {ctxReqCtor} from './ctx';
-import {readonlyRegistryType, registryCtor, serializableType, tuidCtor} from 'ts_agnostic';
-import {dbProviderType, sessionUpdate} from './db';
+import {readonlyRegistryType, registryFactory, serializableType} from "@nereid/anycore";
+import {dbProviderType} from "./db/db_provider.type";
+import {sessionUpdate} from "./db/db_session";
 
 export type wsType = {
   wss: WebSocket.Server,
   call(ctxWs: ctxWsType, callName: string, params: serializableType): Promise<serializableType>,
 };
 
-export function wsInit(
+export const wsInit = (
   wsHandlerRegistry: readonlyRegistryType<wsHandlerType>,
   server: Server,
   settings: serverSettingsType,
   sessionInit: reqHandlerType,
   dbProvider: dbProviderType,
+  tuidFactory: () => string,
   wsOnConnectHandler?: (ctxWs: ctxWsType) => Promise<serializableType>,
   wsOnCloseHandler?: (ctxWs: ctxWsType) => Promise<serializableType>,
-): wsType {
+) => {
   const wss = new WebSocket.Server({
     noServer: true,
     backlog: 32,
   });
 
-  function heartbeat(ctxWs: ctxWsType) {
+  const heartbeat = (ctxWs: ctxWsType) => {
     console.log('heartbeat', ctxWs.sessionId);
     ctxWs.ws.isAlive = true;
-  }
+  };
 
-  async function fromRemote(ctxWs: ctxWsType, data: string): Promise<void> {
+  const fromRemote = async (ctxWs: ctxWsType, data: WebSocket.RawData) => {
     try {
-      const i: { id?: string; n?: string; a?: serializableType, s?: string, e?: serializableType, r?: serializableType } = JSON.parse(data);
+      const i: { id?: string; n?: string; a?: serializableType, s?: string, e?: serializableType, r?: serializableType } = JSON.parse(data.toString('utf8'));
       const ss = i.s?.[0];
       if (i.id && i.n && ss === '?') {
         try {
@@ -84,26 +86,30 @@ export function wsInit(
     } catch {
       ctxWs.ws.terminate();
     }
-  }
+  };
 
   // eslint-disable-next-line @typescript-eslint/no-empty-function
-  function noop() {
+  const noop = () => {
 
-  }
+  };
 
-  function ping() {
+  const ping = () => {
     console.log('sending pings');
-    wss.clients.forEach(function each(ws: webSocketExtendedType) {
-      if (!ws.isAlive) return ws.terminate();
-      ws.isAlive = false;
+    wss.clients.forEach((ws: WebSocket) => {
+      const wse = ws as webSocketExtendedType;
+      if (!wse.isAlive) return ws.terminate();
+      wse.isAlive = false;
       ws.ping(noop);
     });
-  }
+  };
 
   setInterval(ping, 30000);
 
-  async function onClose(ctxWs: ctxWsType) {
-    if (ctxWsRegistry.remove(ctxWs.sessionId)) {
+  const ctxWsRegistry = registryFactory<ctxWsType>();
+
+  const onClose = async (ctxWs: ctxWsType) => {
+    const removed = ctxWsRegistry.remove(ctxWs.sessionId);
+    if (removed) {
       try {
         await wsOnCloseHandler?.(ctxWs);
       } catch (e) {
@@ -117,7 +123,7 @@ export function wsInit(
         }
       }
     }
-  }
+  };
 
   wss.on('connection', async (ctxWs: ctxWsType) => {
     if (ctxWs.ws.protocol !== 'rpc_v1') {
@@ -133,28 +139,41 @@ export function wsInit(
     } catch (e) {
       console.error('onConnect exception:', e);
     }
-    ctxWs.ws.on('message', data => fromRemote(ctxWs, data as string));
+    ctxWs.ws.on('message', data => fromRemote(ctxWs, data));
   });
 
-  const ctxWsRegistry = registryCtor<ctxWsType>();
+  const isActive = (ws: WebSocket | undefined): boolean => ws?.readyState === WebSocket.OPEN;
 
-  function call(ctxWs: ctxWsType, callName: string, params: serializableType): Promise<serializableType> {
-    return new Promise<serializableType>((resolve, reject) => {
-      const id = tuidCtor();
-      const data = JSON.stringify({id, n: callName, a: params, s: '?'});
-      ctxWs.requests.register(id, {
-        ctxWs,
-        id,
-        resolve,
-        reject,
-        data,
-        sent: false,
-      });
-      if (isActive(ctxWs.ws)) {
-        processPending();
+  const processPending = (): void => {
+    ctxWsRegistry.values.forEach(ctx => {
+      const ids = ctx.requests.names;
+      for (const id of ids) {
+        const r = ctx.requests.lookup(id);
+        if (r && isActive(r.ctxWs?.ws) && !r.sent) {
+          r.ctxWs.ws?.send(r.data);
+          r.sent = true;
+        }
       }
     });
-  }
+  };
+
+  const call = (ctxWs: ctxWsType, callName: string, params: serializableType) =>
+    new Promise<serializableType>(
+      (resolve, reject) => {
+        const id = tuidFactory();
+        const data = JSON.stringify({id, n: callName, a: params, s: '?'});
+        ctxWs.requests.register(id, {
+          ctxWs,
+          id,
+          resolve,
+          reject,
+          data,
+          sent: false,
+        });
+        if (isActive(ctxWs.ws)) {
+          processPending();
+        }
+      });
 
   type IncomingMessageEx = IncomingMessage & { _: { ctx: ctxReqType } };
 
@@ -201,7 +220,7 @@ export function wsInit(
             db: ctx.db,
             dbProvider: ctx.dbProvider,
             permission: ctx.permission,
-            requests: registryCtor<requestType>(),
+            requests: registryFactory<requestType>(),
             call(name: string, params: serializableType): Promise<serializableType> {
               return call(ctxWs, name, params);
             },
@@ -228,22 +247,5 @@ export function wsInit(
     }
   });
 
-  function isActive(ws: WebSocket | undefined): boolean {
-    return ws?.readyState === WebSocket.OPEN;
-  }
-
-  function processPending(): void {
-    ctxWsRegistry.values.forEach(ctx => {
-      const ids = ctx.requests.names;
-      for (const id of ids) {
-        const r = ctx.requests.lookup(id);
-        if (r && isActive(r.ctxWs?.ws) && !r.sent) {
-          r.ctxWs.ws?.send(r.data);
-          r.sent = true;
-        }
-      }
-    });
-  }
-
   return {wss, call};
-}
+};

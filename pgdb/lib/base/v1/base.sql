@@ -48,9 +48,27 @@ create table app.login (
   login varchar not null unique,
   display_name varchar not null,
   locale_name varchar not null references app.locale,
-  raw_auth_response varchar not null
+  n varchar, -- n: for use in newer secure password exchange system, if NULL q is pwcrypted
+  q varchar, -- either bcrypt(password) or bcrypt(sha512(password, n)) if n is not NULL
+  allow_google_login boolean not null default false,
+  raw_gauth_response varchar
 );
 select app.add_history_to_table('login');
+------------------------------------------------------------------------------------------------------
+create table app.login_1_mfa_sms (
+  login_1_mfa_id uuid default func.tuid6() primary key,
+  login_id varchar not null unique references app.login (login_id) on delete cascade,
+  mfa_key varchar not null,
+  mfa_sms_number varchar not null
+);
+select app.add_history_to_table('login_1_mfa_sms');
+------------------------------------------------------------------------------------------------------
+create table app.login_1_mfa_app (
+  login_1_mfa_id uuid default func.tuid6() primary key,
+  login_id varchar not null unique references app.login (login_id) on delete cascade,
+  mfa_key varchar not null
+);
+select app.add_history_to_table('login_1_mfa_app');
 ------------------------------------------------------------------------------------------------------
 create table app.access_log (
   bearer_token varchar not null, -- NOT references, we want to retain the logs if login is deleted.
@@ -85,9 +103,27 @@ create table staff.login (
   login varchar not null unique,
   display_name varchar not null,
   locale_name varchar not null references app.locale,
-  raw_auth_response varchar not null
+  n varchar, -- n: for use in newer secure password exchange system, if NULL q is pwcrypted
+  q varchar, -- either bcrypt(password) or bcrypt(sha512(password, n)) if n is not NULL
+  allow_google_login boolean not null default false,
+  raw_gauth_response varchar
 );
 select staff.add_history_to_table('login');
+------------------------------------------------------------------------------------------------------
+create table staff.login_1_mfa_sms (
+  login_1_mfa_id uuid default func.tuid6() primary key,
+  login_id varchar not null unique references app.login (login_id) on delete cascade,
+  mfa_key varchar not null,
+  mfa_sms_number varchar not null
+);
+select staff.add_history_to_table('login_1_mfa_sms');
+------------------------------------------------------------------------------------------------------
+create table staff.login_1_mfa_app (
+  login_1_mfa_id uuid default func.tuid6() primary key,
+  login_id varchar not null unique references staff.login (login_id) on delete cascade,
+  mfa_key varchar not null
+);
+select staff.add_history_to_table('login_1_mfa_app');
 ------------------------------------------------------------------------------------------------------
 create table staff.access_log (
   login varchar not null, -- NOT references, we want to retain the logs if login is deleted.

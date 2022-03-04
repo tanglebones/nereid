@@ -2,18 +2,24 @@
 // -- bootstrap
 
 import {createServer, IncomingMessage, Server, ServerResponse} from 'http';
-import {contentHandlerType, ctxType, wsHandlerType, serverSettingsType, ctxWsType, ctxReqType} from './server.type';
+import {contentHandlerType, ctxType, wsHandlerType, serverSettingsType, ctxWsType} from './server.type';
 import {ctxCtor} from './ctx';
 import {gauthContinueCtor, gauthInitCtor, gauthOnUserData} from './gauth';
 import {sessionInfoCtor, sessionInitCtor, sessionSetCtor} from './session';
-import {secureTokenCtor, secureTokenVerify} from './stoken';
+import {secureTokenFactoryCtor} from './stoken';
 import axios from 'axios';
 import {wsInit, wsType} from './ws';
-import {readonlyRegistryCtor, readonlyRegistryType} from 'ts_agnostic';
-import {serializableType} from 'ts_agnostic';
-import {dbProviderCtor, sessionExpire, sessionUpdate} from './db';
+import {readonlyRegistryFactory, serializableType, readonlyRegistryType} from '@nereid/anycore';
+import {sessionExpire, sessionUpdate} from './db/db_session';
+import {stuidFactoryCtor, tuidFactoryCtor} from "@nereid/nodecore";
+import {randomFillSync} from "crypto";
+import {dbProviderCtor} from "./db/db_provider";
 
 //----------------------
+const nowMs = () => +new Date();
+const tuidFactory = tuidFactoryCtor(randomFillSync, nowMs, "base64url");
+const stuidFactory = stuidFactoryCtor(randomFillSync, nowMs, "base64url");
+const secureTokenFactory = secureTokenFactoryCtor("temp", stuidFactory);
 
 export function server(
   settings: serverSettingsType,
@@ -24,7 +30,7 @@ export function server(
   onUserData?: gauthOnUserData,
 ): { server: Server, ws?: wsType } {
   if (!wsHandlerRegistry) {
-    wsHandlerRegistry = readonlyRegistryCtor<wsHandlerType>([]);
+    wsHandlerRegistry = readonlyRegistryFactory<wsHandlerType>([]);
   }
 
   function handleNotFound(res: ServerResponse) {
@@ -50,45 +56,31 @@ export function server(
     res.end(`500 Server Error:\n${e}`);
   }
 
-  let sessionInit: contentHandlerType | undefined = undefined;
-  let sessionSet: contentHandlerType | undefined = undefined;
-  let sessionInfo: contentHandlerType | undefined = undefined;
-
-  if (settings.mode) {
-    sessionInit = sessionInitCtor(settings);
-    sessionSet = sessionSetCtor(settings);
-    sessionInfo = sessionInfoCtor(settings);
-  }
-
+  const sessionInit = sessionInitCtor(settings);
+  const sessionSet = sessionSetCtor(settings);
+  const sessionInfo = sessionInfoCtor(settings);
   let gauthInit: (ctx: ctxType) => Promise<void>;
   let gauthContinue: (ctx: ctxType) => Promise<void>;
 
   // you must set mode to use gauth
-  if (settings.google && onUserData && settings.mode) {
+  if (settings.google && onUserData) {
     gauthInit = gauthInitCtor({
         google: settings.google,
       },
-      secureTokenCtor,
+      secureTokenFactory.create,
     );
 
     gauthContinue = gauthContinueCtor({
         appUrl: settings.appUrl,
         google: settings.google,
       },
-      secureTokenVerify,
+      secureTokenFactory.verify,
       onUserData,
       axios.post,
     );
-    // istanbul ignore next: these must be defined by the logic above, but the compiler is not that smart.
-    if (sessionInit && sessionSet && sessionInfo) {
-      ha = [sessionInit, sessionSet, gauthInit, gauthContinue, sessionInfo, ...handlerArray];
-    }
+    ha = [sessionInit, sessionSet, gauthInit, gauthContinue, sessionInfo, ...handlerArray];
   } else {
-    if (sessionInit && sessionSet && sessionInfo) {
-      ha = [sessionInit, sessionSet, sessionInfo, ...handlerArray];
-    } else {
-      ha = handlerArray;
-    }
+    ha = [sessionInit, sessionSet, sessionInfo, ...handlerArray];
   }
 
   const dbProvider = dbProviderCtor(settings.dbConnectionString);
@@ -107,7 +99,7 @@ export function server(
     } catch (e) {
       console.error(e);
       if (!res.writableEnded) {
-        handleServerError(res, e);
+        handleServerError(res, e as Error);
       }
     }
   }
@@ -131,7 +123,7 @@ export function server(
   if (settings.mode) {
     // istanbul ignore next: these must be defined by the logic above, but the compiler is not that smart.
     if (sessionInit) {
-      ws = wsInit(wsHandlerRegistry, server, settings, sessionInit, dbProvider, wsOnConnectHandler, wsOnCloseHandler);
+      ws = wsInit(wsHandlerRegistry, server, settings, sessionInit, dbProvider, tuidFactory, wsOnConnectHandler, wsOnCloseHandler);
     }
   }
   return {server, ws};

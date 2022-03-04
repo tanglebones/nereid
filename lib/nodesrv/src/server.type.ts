@@ -1,9 +1,7 @@
 import {IncomingMessage, ServerResponse} from 'http';
 import WebSocket from 'ws';
-import {serializableType} from 'ts_agnostic';
-import {registryType} from 'ts_agnostic';
-import {dbProviderCtxType} from './db_util';
-import {dbProviderType} from './db';
+import {serializableType, registryType} from '@nereid/anycore';
+import {dbProviderType, dbProviderCtxType} from './db/db_provider.type';
 
 export type urlType = {
   path: string,
@@ -11,15 +9,18 @@ export type urlType = {
 }
 
 export type userInfoType = {
-  login: string;
-  clientProfileId?: string;
-  federatedLoginId?: string;
+  login_id: string;
+  login?: string;
+  display_name?: string;
 };
 
 export type ctxBaseType = {
   sessionId: string;
   settings: serverSettingsType;
-  session: Record<string, serializableType>;
+  session?: {
+    app?: Record<string, serializableType>,
+    system?: Record<string, serializableType>
+  };
   permission?: Record<string, boolean>;
   user?: userInfoType;
   db: dbProviderCtxType;
@@ -60,14 +61,8 @@ export type ctxWsType = ctxBaseType & {
 export type ctxType = ctxReqType & {
   res: ServerResponse,
 }
-
-type userType = {
-  login: string;
-  display_name: string;
-};
-
 export type userStoreType = {
-  [userId: string]: userType
+  [userId: string]: userInfoType
 }
 
 export type gauthUserInfoType = {

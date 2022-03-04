@@ -53,7 +53,7 @@ export function ctxReqCtor(
     dbProvider,
     db,
     settings,
-    remoteAddress: req.connection?.remoteAddress || '',
+    remoteAddress: req.socket?.remoteAddress || '',
   };
 }
 

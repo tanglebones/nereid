@@ -2,15 +2,15 @@
 // will add tests once it is stable
 
 import {ctxType, contentHandlerType, ctxReqType, reqHandlerType} from './server.type';
-import {resolvedVoid} from 'ts_agnostic';
-import {toDbProvideCtx} from './db_util';
-import {sessionVerify} from './db';
+import {resolvedVoid} from '@nereid/anycore';
+import {toDbProvideCtx} from './db/db_util';
+import {sessionVerify} from './db/db_session';
 import {ctxHost} from './ctx';
 
 export type sessionInitCtorType = (settings: Record<string,unknown>) => reqHandlerType;
 
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
-export function sessionInitCtor(settings: Record<string,unknown>): reqHandlerType {
+export function sessionInitCtor(_settings: Record<string,unknown>): reqHandlerType {
   async function sessionInit(ctx: ctxReqType): Promise<void> {
     const sessionIdFromCookie = ctx.cookie.find(e => e[0] === 'SessionId');
     if (sessionIdFromCookie) {
@@ -48,7 +48,7 @@ export function sessionSetCtor(
 }
 
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
-export function sessionInfoCtor(settings: Record<string,unknown>): contentHandlerType {
+export function sessionInfoCtor(_settings: Record<string,unknown>): contentHandlerType {
   function sessionInfo(ctx: ctxType): Promise<void> {
     if (ctx.url.path !== '/session') {
       return resolvedVoid;

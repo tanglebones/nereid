@@ -19,11 +19,10 @@ export const timerGuardCtor = (
     } catch (err) {
       const elapsed = getTimeMs() - start;
       if (elapsed > logOverMs) {
-        rejectedLogger(`[REJECTED ${elapsed}ms:${err.toString().replace(/[\r\n]/g, ' ')}] ${message}`);
+        rejectedLogger(`[REJECTED ${elapsed}ms:${(err as Error)?.toString()?.replace(/[\r\n]/g, ' ')}] ${message}`);
       }
       throw err;
     }
   }
 
-// istanbul ignore next : bootstrap
-export const timerGuard = timerGuardCtor(() => +Date.now(), console.log, console.error);
+// const timerGuard = timerGuardCtor(() => +Date.now(), console.log, console.error);

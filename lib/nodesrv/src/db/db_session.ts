@@ -30,10 +30,11 @@ export async function sessionVerify(ctx: Pick<ctxBaseType, 'sessionId' | 'sessio
   }
   return ctx.dbProvider('-SESSION-', async (db: dbType) => {
     const result: {
-      login: string,
-      data: Record<string, serializableType>,
-      client_profile_id?: string,
-      federated_login_id?: string
+      login_id: string,
+      login?: string,
+      display_name?: string,
+      app_data?: Record<string, serializableType>,
+      system_data?: Record<string, serializableType>,
     } | undefined = await db.oneOrNone(
       verifySql,
       {
@@ -45,16 +46,16 @@ export async function sessionVerify(ctx: Pick<ctxBaseType, 'sessionId' | 'sessio
       ctx.sessionId = '';
       await sessionCreate(ctx);
     } else {
-      if (ctx.user) {
-        ctx.user.login = result.login;
-      } else {
         ctx.user = {
           login: result.login,
-          clientProfileId: result.client_profile_id,
-          federatedLoginId: result.federated_login_id,
+          login_id: result.login_id,
+          display_name: result.display_name,
         };
-      }
-      ctx.session = result.data;
+
+      ctx.session = {
+        app: result.app_data,
+        system: result.system_data,
+      };
     }
   }, ctx.sessionId);
 }
@@ -69,10 +70,9 @@ export async function sessionUpdate(ctx: Pick<ctxBaseType, 'sessionId' | 'sessio
       updateSql,
       {
         sessionId: ctx.sessionId,
-        data: ctx.session,
-        login: ctx?.user?.login,
-        clientProfileId: ctx?.user?.clientProfileId,
-        federatedLoginId: ctx?.user?.federatedLoginId,
+        app_data: ctx.session?.app,
+        system_data: ctx.session?.system,
+        login_id: ctx.user?.login_id,
       },
     );
     debug(`update result: ${JSON.stringify(result)}`);

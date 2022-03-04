@@ -10,17 +10,19 @@ import {value as createSql} from './db_session_create_sql';
 // import {value as updateClientSql} from './db_session_update_sql';
 // import {value as verifyStaffSql} from './db_session_verify_sql';
 // import {resolvedUndefined, serializableType} from '@nereid/anycore';
-import sinon from "sinon";
-import {dbProviderStub} from "./db_provider.stub";
+
+import {dbProviderCtor} from "./db_provider";
+import {toDbProvideCtx} from "./db_util";
 
 describe('sessionCreate', () => {
+  const dbProvider = dbProviderCtor("postgres://eg_app:app@localhost:5414/eg");
   const setup = () => {
-    const dbStub = dbProviderStub(sinon);
+
     const ctxStub = {
       sessionId: '',
       session: {'': ''},
-      dbProvider: dbStub.ctxDbProvider,
-      db: dbStub.db,
+      dbProvider,
+      db: toDbProvideCtx("user", "-", dbProvider),
     }
 
     return {ctxStub};
@@ -28,7 +30,6 @@ describe('sessionCreate', () => {
 
   it('happy path', async () => {
     const {ctxStub} = setup();
-    ctxStub.db.one.resolves({session_id: 'session_id_mock'});
 
     await sessionCreate(ctxStub);
     assert.strictEqual(ctxStub.db.one.callCount, 1);

@@ -1,4 +1,4 @@
-import {timerGuard, timerGuardCtor} from './timer_guard';
+import {timerGuardCtor} from './timer_guard';
 import * as assert from 'assert';
 import * as sinon from 'sinon';
 
@@ -33,7 +33,7 @@ describe('timerGuard', () => {
     const timerGuard = timerGuardCtor(getTimeMs, onRes, onRej);
 
     try {
-      const result = await timerGuard(
+      await timerGuard(
         (async () => {
           throw 2;
         })(),
@@ -77,7 +77,7 @@ describe('timerGuard', () => {
     const timerGuard = timerGuardCtor(getTimeMs, onRes, onRej);
 
     try {
-      const result = await timerGuard(
+      await timerGuard(
         (async () => {
           throw "4\nline 22";
         })(),

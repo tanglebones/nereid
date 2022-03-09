@@ -1,10 +1,7 @@
-type setIntervalType = typeof setInterval;
-type clearIntervalType = typeof clearInterval;
-
-export const eventLoopHealthMonitorCtor = (
+export const eventLoopHealthMonitorCtor= <T>(
   getTimeMs: () => number,
-  setInterval: setIntervalType,
-  clearInterval: clearIntervalType,
+  setInterval: (callback: () => void, ms: number) => T,
+  clearInterval: (handle: T) => void,
   logger: (msg: string) => void,
   periodMs: number,
   maxDriftMs: number,

@@ -10,7 +10,9 @@
       <user-name>eg_dba</user-name>
       <schema-mapping>
         <introspection-scope>
-          <node kind="database" qname="eg">
+          <node kind="database">
+            <name qname="eg" />
+            <name qname="eg_test" />
             <node kind="schema">
               <name qname="app" />
               <name qname="func" />

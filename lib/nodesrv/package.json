@@ -8,7 +8,7 @@
   "scripts": {
     "sql_to_ts": "sql_to_ts",
     "build": "tsc",
-    "test": "mocha",
+    "test": "NODE_ENV=test PGDB_URL_TEST=postgres://eg_app:app@localhost:5414/eg_test mocha",
     "cover": "nyc mocha",
     "lint": "eslint src --ext .js,.jsx,.ts,.tsx",
     "doc": "npx typedoc src/*.ts src/**/*.ts --out dist/doc"

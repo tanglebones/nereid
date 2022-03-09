@@ -4,7 +4,7 @@ export interface PromiseState<T> extends Promise<T> {
   isResolved: boolean;
 }
 
-export function promiseStateCtor<T>(promise: Promise<T>): PromiseState<T> {
+export const promiseStateCtor = <T>(promise: Promise<T>) => {
   let isPending = true;
   let isRejected = false;
   let isResolved = false;
@@ -39,4 +39,4 @@ export function promiseStateCtor<T>(promise: Promise<T>): PromiseState<T> {
   });
 
   return result as PromiseState<T>;
-}
+};

@@ -63,8 +63,6 @@ export function ctxCtor(req: IncomingMessage, res: ServerResponse, dbProvider: d
   return ctx;
 }
 
-export type ctxCtorType = typeof ctxCtor;
-
 export function ctxSetDb(ctx: { user?: { login?: string }, sessionId: string, dbProvider: dbProviderType, db?: dbProviderCtxType }): void {
   ctx.db = toDbProvideCtx(ctx?.user?.login || '-', ctx.sessionId, ctx.dbProvider);
 }

@@ -1,9 +1,5 @@
 // istanbul ignore file
-function resolvedPromise<T>(t: T): Promise<T> {
-  return new Promise<T>(r => {
-    r(t);
-  });
-}
+const resolvedPromise = <T>(t: T) => new Promise<T>(r => r(t));
 
 export const resolvedVoid = resolvedPromise<void>(void (0));
 export const resolvedUndefined = resolvedPromise<undefined>(undefined);

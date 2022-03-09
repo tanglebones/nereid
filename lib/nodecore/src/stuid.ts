@@ -25,15 +25,15 @@ export const stuidFactoryCtor = (
       now = lastTime + 1n;
     }
     lastTime = now;
-    const buffer = Buffer.alloc(34);
+    const buffer = Buffer.alloc(34, 0);
     buffer.writeBigInt64BE(now, 0); // 8 bytes, of which we use 6 (48 bits)
     randomFillSync(buffer, 8, 26); // 26 bytes (208 bits)
     return buffer.subarray(2, 34).toString(format);
   };
 }
 
-export const stuidEpochMicro = (tuid: string, format: "hex" | "base64url" | undefined = undefined) => {
-  const buffer = Buffer.alloc(34);
+export const stuidEpochMilli = (tuid: string, format: "hex" | "base64url" | undefined = undefined) => {
+  const buffer = Buffer.alloc(34, 0);
   buffer[0] = 0;
   buffer[1] = 0;
   buffer.write(tuid, 2, format ?? "hex");
@@ -45,10 +45,10 @@ export const stuidForTestingFactoryCtor = (start = 0, format: "hex" | "base64url
   let n = BigInt(start);
   const fmt = format ?? "hex";
   return () => {
-    const buffer = Buffer.alloc(36);
+    const buffer = Buffer.alloc(36, 0);
     buffer.writeBigInt64BE(n, 0);
     n += 1n;
-    return buffer.subarray(2, 36).toString(fmt);
+    return buffer.subarray(2, 34).toString(fmt);
   };
 };
 

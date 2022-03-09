@@ -1,6 +1,6 @@
-import * as sinon from 'sinon';
-import * as assert from 'assert';
-import {gauthContinueCtor, gauthInitCtor} from './gauth';
+import sinon from 'sinon';
+import assert from 'assert';
+import {gauthCtor} from './gauth';
 import {gauthUserInfoType} from './server.type';
 
 const settings = {
@@ -15,25 +15,58 @@ const settings = {
   },
 };
 
-describe('gauthInit', () => {
+const getSut = ({login, path, params, axiosData}: {
+  login?: string,
+  path: string,
+  params?: [string, string][],
+  axiosData?: { id_token: string, [key: string]: unknown }
+}) => {
+  const secureTokenFactory = {create: sinon.stub(), verify: sinon.stub()};
+  const userVivify = sinon.stub().resolves('user_id');
+
+  secureTokenFactory.create.returns('stoken');
+
+  const idTokenJson: gauthUserInfoType = {
+    email: 'a@example.com',
+    email_verified: true,
+    family_name: 'a',
+    given_name: 'example',
+    name: 'A Example',
+    locale: 'en-us',
+    picture: 'http://example.com/picture',
+  };
+
+  axiosData ??= {
+    id_token: '{}.' + Buffer.from(JSON.stringify(idTokenJson)).toString('base64') + '.sig',
+    other: 'stuff',
+  };
+
+  const poster = sinon.stub().resolves({
+    data: axiosData,
+  });
+
+  const ctx: any = {
+    url: {
+      path,
+      params,
+    },
+    res: {
+      writeHead: sinon.stub(),
+      end: sinon.stub(),
+      setHeader: sinon.stub(),
+    },
+    session: {},
+    user: {login},
+  };
+  const subject = gauthCtor(settings, secureTokenFactory, userVivify, poster);
+  return {secureTokenFactory, userVivify, poster, ctx, idTokenJson, axiosData, subject}
+}
+
+describe('gauth.init', () => {
   it('Basics', async () => {
-    const secureTokenCtor = sinon.stub();
-    secureTokenCtor.returns('stoken');
+    const {ctx, subject} = getSut({login: 'user_login_mock', path: '/gauth/init'});
 
-    const subject = gauthInitCtor(settings, secureTokenCtor);
-
-    const ctx: any = {
-      url: {
-        path: '/gauth/init',
-      },
-      res: {
-        writeHead: sinon.stub(),
-        end: sinon.stub(),
-        setHeader: sinon.stub(),
-      },
-    };
-
-    await subject(ctx);
+    await subject.init(ctx);
 
     sinon.assert.calledOnce(ctx.res.end);
     sinon.assert.calledOnceWithExactly(
@@ -54,73 +87,27 @@ describe('gauthInit', () => {
   });
 
   it('Ignores others paths', async () => {
-    const secureTokenCtor = sinon.stub();
+    const {ctx, subject, secureTokenFactory} = getSut({login: 'user_login_mock', path: '/gauth/init'});
 
-    const subject = gauthInitCtor(settings, secureTokenCtor);
+    ctx.url.path = '/gauth/init';
 
-    const ctx: any = {
-      url: {
-        path: '/asdf',
-      },
-      res: {
-        writeHead: sinon.stub(),
-        end: sinon.stub(),
-        setHeader: sinon.stub(),
-      },
-    };
+    await subject.init(ctx);
 
-    await subject(ctx);
-
-    sinon.assert.notCalled(secureTokenCtor);
+    sinon.assert.notCalled(secureTokenFactory.create);
     sinon.assert.notCalled(ctx.res.end);
     sinon.assert.notCalled(ctx.res.writeHead);
   });
 });
 
-describe('gauthContinue', () => {
-  const setup = (userLogin) => {
-    const secureTokenVerify = sinon.stub().returns('stoken');
-    const userVivify = sinon.stub().resolves('user_id');
-
-    const idTokenJson: gauthUserInfoType = {
-      email: 'a@example.com',
-      email_verified: true,
-      family_name: 'a',
-      given_name: 'example',
-      name: 'A Example',
-      locale: 'en-us',
-      picture: 'http://example.com/picture',
-    };
-    let axiosData = {
-      id_token: '{}.' + Buffer.from(JSON.stringify(idTokenJson)).toString('base64') + '.sig',
-      other: 'stuff',
-    };
-    const poster = sinon.stub().resolves({
-      data: axiosData,
+describe('gauth.resume', () => {
+  it('Happy Path', async () => {
+    const {userVivify, poster, ctx, idTokenJson, axiosData, subject} = getSut({
+      login: 'user_login_mock',
+      path: '/gauth/resume',
+      params: [['state', 'stoken'], ['code', '4code']]
     });
 
-    const ctx: any = {
-      url: {
-        path: '/gauth/continue',
-        params: [['state', 'stoken'], ['code', '4code']],
-      },
-      res: {
-        writeHead: sinon.stub(),
-        end: sinon.stub(),
-        setHeader: sinon.stub(),
-      },
-      session: {},
-      user: { login: userLogin },
-    };
-
-    return {secureTokenVerify, userVivify, poster, ctx, idTokenJson, axiosData}
-  }
-
-  it('Happy Path', async () => {
-    const {secureTokenVerify, userVivify, poster, ctx, idTokenJson, axiosData} = setup('user_login_mock');
-
-    const subject = gauthContinueCtor(settings, secureTokenVerify, userVivify, poster);
-    await subject(ctx);
+    await subject.resume(ctx);
 
     sinon.assert.calledOnceWithExactly(
       poster,
@@ -148,13 +135,15 @@ describe('gauthContinue', () => {
     );
 
     sinon.assert.calledOnce(ctx.res.end);
-  });
+  })
+  ;
 
   it('No user', async () => {
-    const {secureTokenVerify, userVivify, poster, ctx, idTokenJson, axiosData} = setup(undefined);
-
-    const subject = gauthContinueCtor(settings, secureTokenVerify, userVivify, poster);
-    await subject(ctx);
+    const {userVivify, poster, ctx, idTokenJson, axiosData, subject} = getSut({
+      path: '/gauth/resume',
+      params: [['state', 'stoken'], ['code', '4code']]
+    });
+    await subject.resume(ctx);
 
     sinon.assert.calledOnceWithExactly(
       poster,
@@ -185,38 +174,16 @@ describe('gauthContinue', () => {
   });
 
   it('Handles invalid jwt', async () => {
-    const secureTokenVerify = sinon.stub();
-    const userVivify = sinon.stub();
-
-    const poster = sinon.stub();
-
-    let axiosData = {
-      id_token: '{}.invalid.sig',
-      other: 'stuff',
-    };
-
-    poster.resolves({
-      data: axiosData,
+    const {userVivify, poster, ctx, subject} = getSut({
+      path: '/gauth/resume',
+      params: [['state', 'stoken'], ['code', '4code']],
+      axiosData: {
+        id_token: '{}.invalid.sig',
+        other: 'stuff',
+      }
     });
 
-    secureTokenVerify.returns('stoken');
-
-    const subject = gauthContinueCtor(settings, secureTokenVerify, userVivify, poster);
-
-    const ctx: any = {
-      url: {
-        path: '/gauth/continue',
-        params: [['state', 'stoken'], ['code', '4code']],
-      },
-      res: {
-        writeHead: sinon.stub(),
-        end: sinon.stub(),
-        setHeader: sinon.stub(),
-      },
-      session: {},
-    };
-
-    await subject(ctx);
+    await subject.resume(ctx);
 
     sinon.assert.calledOnceWithExactly(
       poster,
@@ -239,32 +206,16 @@ describe('gauthContinue', () => {
   });
 
   it('Handles invalid stoken', async () => {
-    const secureTokenVerify = sinon.stub();
-    const userVivify = sinon.stub();
-    const axios: any = {
-      post: sinon.stub(),
-    };
+    const {userVivify, poster, ctx, subject, secureTokenFactory} = getSut({
+      path: '/gauth/resume',
+      params: [['state', 'stoken'], ['code', '4code']],
+    });
 
-    secureTokenVerify.returns(undefined);
+    secureTokenFactory.verify.returns(undefined);
 
-    const subject = gauthContinueCtor(settings, secureTokenVerify, userVivify, axios);
+    await subject.resume(ctx);
 
-    const ctx: any = {
-      url: {
-        path: '/gauth/continue',
-        params: [['state', 'stoken'], ['code', '4code']],
-      },
-      res: {
-        writeHead: sinon.stub(),
-        end: sinon.stub(),
-        setHeader: sinon.stub(),
-      },
-      session: {},
-    };
-
-    await subject(ctx);
-
-    sinon.assert.notCalled(axios.post);
+    sinon.assert.notCalled(poster);
     sinon.assert.notCalled(userVivify);
     assert.strictEqual(ctx.session.userId, undefined);
     sinon.assert.notCalled(ctx.res.writeHead);
@@ -273,31 +224,15 @@ describe('gauthContinue', () => {
   });
 
   it('Ignores other paths', async () => {
-    const secureTokenVerify = sinon.stub();
-    const userVivify = sinon.stub();
+    const {userVivify, poster, ctx, subject} = getSut({
+      login: 'user_login_mock',
+      path: '/asdf',
+      params: [['state', 'stoken'], ['code', '4code']]
+    });
 
-    const axios: any = {
-      post: sinon.stub(),
-    };
+    await subject.resume(ctx);
 
-    const subject = gauthContinueCtor(settings, secureTokenVerify, userVivify, axios);
-
-    const ctx: any = {
-      url: {
-        path: '/asdf',
-        params: [],
-      },
-      res: {
-        writeHead: sinon.stub(),
-        end: sinon.stub(),
-        setHeader: sinon.stub(),
-      },
-      session: {},
-    };
-
-    await subject(ctx);
-
-    sinon.assert.notCalled(axios.post);
+    sinon.assert.notCalled(poster);
     sinon.assert.notCalled(userVivify);
     assert.strictEqual(ctx.session.userId, undefined);
     sinon.assert.notCalled(ctx.res.writeHead);

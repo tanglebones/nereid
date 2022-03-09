@@ -1,16 +1,19 @@
-import {secureTokenCtor, secureTokenVerify} from './stoken';
-import * as assert from 'assert';
-import {stuidZero} from './stuid';
+import {secureTokenFactoryCtor} from './stoken';
+import assert from 'assert';
+import {stuidForTestingFactoryCtor, stuidZeroHex} from "@nereid/nodecore";
 
 describe('stoken', () => {
+  const secureTokenFactory = secureTokenFactoryCtor("aoeu", stuidForTestingFactoryCtor());
+
   it('basics', () => {
-    const token = secureTokenCtor('bob');
-    const t = secureTokenVerify(token, 'bob');
+    const token = secureTokenFactory.create();
+    const t = secureTokenFactory.verify(token);
     assert(t);
     assert(token.startsWith(t));
   });
+
   it('invalid', () => {
-    assert(!secureTokenVerify(undefined, 'bob'));
-    assert(!secureTokenVerify(stuidZero, 'bob'));
+    assert(!secureTokenFactory.verify(undefined));
+    assert(!secureTokenFactory.verify(stuidZeroHex));
   });
 });

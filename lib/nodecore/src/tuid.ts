@@ -32,7 +32,7 @@ export const tuidFactoryCtor = (
   };
 }
 
-export const tuidEpochMicro = (tuid: string, format: "hex" | "base64url" | undefined = undefined) => {
+export const tuidEpochMilli = (tuid: string, format: "hex" | "base64url" | undefined = undefined) => {
   const buffer = Buffer.alloc(18);
   buffer[0] = 0;
   buffer[1] = 0;

@@ -2,10 +2,11 @@ import {createHmac} from 'crypto';
 
 export const secureTokenFactoryCtor = (secret: string, stuidFactory: () => string) => {
   const create = () => {
-    const s = stuidFactory();
+    const s = stuidFactory().substring(0, 64).padStart(64, '0');
     const x = createHmac('sha256', secret);
     x.update(s);
-    return s + x.digest('hex');
+    const digest = x.digest('hex').substring(0, 64).padStart(64, '0');
+    return s + digest;
   }
 
   const verify = (token: string | undefined) => {
@@ -16,10 +17,13 @@ export const secureTokenFactoryCtor = (secret: string, stuidFactory: () => strin
     const e = token.substring(64);
     const x = createHmac('sha256', secret);
     x.update(s);
-    if (x.digest('hex') === e) {
+    const digest = x.digest('hex');
+    if (digest === e) {
       return s;
     }
   }
 
   return {create, verify};
 }
+
+export type secureTokenFactoryType = ReturnType<typeof secureTokenFactoryCtor>;

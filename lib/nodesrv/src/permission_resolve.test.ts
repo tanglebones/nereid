@@ -1,5 +1,4 @@
-import * as sinon from 'sinon';
-import * as assert from 'assert';
+import assert from 'assert';
 import {permissionResolve} from './permission_resolve'
 
 describe('permissionResolve', () => {

@@ -4,7 +4,7 @@
 import {createServer, IncomingMessage, Server, ServerResponse} from 'http';
 import {contentHandlerType, ctxType, wsHandlerType, serverSettingsType, ctxWsType} from './server.type';
 import {ctxCtor} from './ctx';
-import {gauthContinueCtor, gauthInitCtor, gauthOnUserData} from './gauth';
+import {gauthCtor, gauthOnUserDataType, gauthType} from './gauth';
 import {sessionInfoCtor, sessionInitCtor, sessionSetCtor} from './session';
 import {secureTokenFactoryCtor} from './stoken';
 import axios from 'axios';
@@ -27,7 +27,7 @@ export function server(
   wsHandlerRegistry?: readonlyRegistryType<wsHandlerType>,
   wsOnConnectHandler?: (ctxWs: ctxWsType) => Promise<serializableType>,
   wsOnCloseHandler?: (ctxWs: ctxWsType) => Promise<serializableType>,
-  onUserData?: gauthOnUserData,
+  onUserData?: gauthOnUserDataType,
 ): { server: Server, ws?: wsType } {
   if (!wsHandlerRegistry) {
     wsHandlerRegistry = readonlyRegistryFactory<wsHandlerType>([]);
@@ -59,26 +59,19 @@ export function server(
   const sessionInit = sessionInitCtor(settings);
   const sessionSet = sessionSetCtor(settings);
   const sessionInfo = sessionInfoCtor(settings);
-  let gauthInit: (ctx: ctxType) => Promise<void>;
-  let gauthContinue: (ctx: ctxType) => Promise<void>;
+  let gauth: gauthType;
 
-  // you must set mode to use gauth
   if (settings.google && onUserData) {
-    gauthInit = gauthInitCtor({
-        google: settings.google,
-      },
-      secureTokenFactory.create,
-    );
-
-    gauthContinue = gauthContinueCtor({
+    gauth = gauthCtor({
         appUrl: settings.appUrl,
         google: settings.google,
       },
-      secureTokenFactory.verify,
+      secureTokenFactory,
       onUserData,
       axios.post,
     );
-    ha = [sessionInit, sessionSet, gauthInit, gauthContinue, sessionInfo, ...handlerArray];
+
+    ha = [sessionInit, sessionSet, gauth.init, gauth.resume, sessionInfo, ...handlerArray];
   } else {
     ha = [sessionInit, sessionSet, sessionInfo, ...handlerArray];
   }

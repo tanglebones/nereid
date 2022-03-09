@@ -1,29 +1,29 @@
-import {ctxType, gauthUserInfoType, contentHandlerType, userInfoType, ctxBaseType} from './server.type';
-import {resolvedVoid} from 'ts_agnostic';
-import {secureTokenCtorType, secureTokenVerifyType} from './stoken';
-import {toUrlParam} from 'ts_agnostic';
-import {kvpArrayToObject} from 'ts_agnostic';
-import {tuidCtor} from './tuid';
+import {ctxBaseType, ctxType, gauthUserInfoType} from './server.type';
+import {secureTokenFactoryType} from "./stoken";
+import {resolvedVoid} from "@nereid/anycore";
+import {toUrlParam} from "@nereid/anycore/dist/to_url_param";
+import {kvpArrayToObject} from "@nereid/anycore/dist/kvp_array_to_object";
 
-// server restarts invalidate all tokens
-// since the google login process is fast this should rarely be an issue.
-const sessionSecret = tuidCtor();
-
-export function gauthInitCtor(
+export type gauthOnUserDataType = (ctx: ctxBaseType, gauthUserInfo: gauthUserInfoType, rawAuthResponse: string) => Promise<void>;
+export const gauthCtor = (
   settings: {
     google: {
-      redirectUri: string;
-      id: string;
-    },
-  },
-  secureTokenCtor: secureTokenCtorType,
-): contentHandlerType {
+      redirectUri: string,
+      id: string,
+      secret: string,
 
-  function gauthInit(ctx: ctxType): Promise<void> {
+    },
+    appUrl: string,
+  },
+  secureTokenFactory: secureTokenFactoryType,
+  onUserData: gauthOnUserDataType,
+  poster: <T>(url: string, body: string, options: { headers: Record<string, string> }) => Promise<{ data: T }>) => {
+
+  const init = (ctx: ctxType) => {
     if (ctx.url.path !== '/gauth/init') {
       return resolvedVoid;
     }
-    const token = secureTokenCtor(sessionSecret);
+    const token = secureTokenFactory.create();
     const params: [string, string][] = [
       ['client_id', settings.google.id],
       ['redirect_uri', settings.google.redirectUri],
@@ -43,36 +43,19 @@ export function gauthInitCtor(
       });
     ctx.res.end();
     return resolvedVoid;
-  }
+  };
 
-  return gauthInit;
-}
-export type gauthOnUserData = (ctx: ctxBaseType, gauthUserInfo: gauthUserInfoType, rawAuthResponse: string) => Promise<void>;
-
-export function gauthContinueCtor(
-  settings: {
-    appUrl: string;
-    google: {
-      secret: string;
-      redirectUri: string;
-      id: string;
-    },
-  },
-  secureTokenVerify: secureTokenVerifyType,
-  onUserData: gauthOnUserData,
-  poster: <T>(url: string, body: string, options: { headers: Record<string, string> }) => Promise<{ data: T }>,
-): contentHandlerType {
-  function jwtTrustedDecode(data: string) {
+  const jwtTrustedDecode = (data: string) => {
     // doesn't check the signature, as we already trust the source.
     return JSON.parse(Buffer.from(data.split('.')[1], 'base64').toString('utf-8'));
-  }
+  };
 
-  async function gauthContinue(ctx: ctxType): Promise<void> {
-    if (ctx.url.path !== '/gauth/continue') {
+  const resume = async (ctx: ctxType) => {
+    if (!(ctx.url.path === '/gauth/continue' || ctx.url.path === '/gauth/resume')) {
       return resolvedVoid;
     }
     const {state, code} = kvpArrayToObject(ctx.url.params) as { state: string, code: string };
-    const stuid = secureTokenVerify(state, sessionSecret);
+    const stuid = secureTokenFactory.verify(state);
 
     // TODO: check age of stuid, reject if older than X mins.
     if (!state || !code || !stuid) {
@@ -107,7 +90,7 @@ export function gauthContinueCtor(
     }
     return resolvedVoid;
   }
+  return {init, resume};
+};
 
-  return gauthContinue;
-}
-
+export type gauthType = ReturnType<typeof gauthCtor>;

@@ -1,8 +1,8 @@
 import {_internal_, ctxCtor, ctxBody, ctxHost} from './ctx';
-import * as assert from 'assert';
-import {ctxType, serverSettingsType} from './server.type';
-import {dbProviderStub} from './db';
-import * as sinon from 'sinon';
+import assert from 'assert';
+import {ctxType} from './server.type';
+import {dbProviderStub} from './db/db_provider.stub';
+import sinon from 'sinon';
 
 function commonChecks(ctx: ctxType, res: any, req: any) {
   assert.strictEqual(ctx.sessionId, '');
@@ -19,7 +19,7 @@ describe('ctxCtor', () => {
       headers: {
         cookie: 'c=3; d=4',
       },
-      connection: { remoteAddress: 'aoeu' },
+      connection: {remoteAddress: 'aoeu'},
     };
     const res: any = {};
     const db = dbProviderStub(sinon);
@@ -69,7 +69,7 @@ describe('ctxCtor', () => {
 
 describe('ctxBody', () => {
   it('Sets ctx.body', async () => {
-    const onStub = (step, callback) => {
+    const onStub = (step: string, callback: (data?: string) => void) => {
       if (step === 'data') {
         callback('chunk_mock');
       } else {
@@ -96,7 +96,7 @@ describe('ctxBody', () => {
     assert.strictEqual(ctxStub.req.on.callCount, 2);
     assert.strictEqual(ctxStub.body, 'chunk_mock');
   });
-  
+
   it('Resolves true if there is already a ctx.body', async () => {
     const ctxStub = {
       body: "Shredder!! Why haven't you completed my new body!?",
@@ -123,7 +123,7 @@ describe('ctxBody', () => {
   });
 
   it('Returns false if there is no ctx.body and the request is a POST, but the request is too long', async () => {
-    const onStub = (step, callback) => {
+    const onStub = (step: string, callback: (data?: string) => void) => {
       if (step === 'data') {
         callback('large_chunk_mock');
       } else {
@@ -165,7 +165,7 @@ describe('ctxHost', () => {
       res: <any>{},
     }
 
-    assert.strictEqual(ctxHost(ctxStub), undefined);
+    ctxHost(ctxStub);
     assert.strictEqual(ctxStub.host, 'domain.tld');
   });
 
@@ -176,7 +176,7 @@ describe('ctxHost', () => {
       res: <any>{},
     }
 
-    assert.strictEqual(ctxHost(ctxStub), undefined);
+    ctxHost(ctxStub);
     assert.strictEqual(ctxStub.host, 'domain.tld');
   });
 });

@@ -2,7 +2,7 @@ import assert from 'assert';
 import sinon from 'sinon';
 import {
   stuidBase64urlToHex,
-  stuidEpochMicro,
+  stuidEpochMilli,
   stuidFactoryCtor,
   stuidForTestingFactoryCtor,
   stuidHexToBase64url
@@ -63,12 +63,12 @@ describe("stuid", () => {
   it("stuidEpochMicro", () => {
     {
       const stuidFactory = stuidForTestingFactoryCtor();
-      assert.strictEqual(0, stuidEpochMicro(stuidFactory()));
-      assert.strictEqual(1, stuidEpochMicro(stuidFactory()));
+      assert.strictEqual(0, stuidEpochMilli(stuidFactory()));
+      assert.strictEqual(1, stuidEpochMilli(stuidFactory()));
     }
     {
       const stuidFactory = stuidForTestingFactoryCtor(11);
-      assert.strictEqual(11, stuidEpochMicro(stuidFactory()));
+      assert.strictEqual(11, stuidEpochMilli(stuidFactory()));
     }
   });
 });

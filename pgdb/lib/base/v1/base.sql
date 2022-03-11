@@ -48,10 +48,10 @@ create table app.login (
   login varchar not null unique,
   display_name varchar not null,
   locale_name varchar not null references app.locale,
-  n varchar, -- n: for use in newer secure password exchange system, if NULL q is pwcrypted
-  q varchar, -- either bcrypt(password) or bcrypt(sha512(password, n)) if n is not NULL
+  n varchar null, -- n: for use in newer secure password exchange system, if NULL q is pwcrypted
+  q varchar null, -- either bcrypt(password) or bcrypt(sha512(password, n)) if n is not NULL
   allow_google_login boolean not null default false,
-  raw_gauth_response varchar
+  raw_gauth_response varchar null
 );
 select app.add_history_to_table('login');
 ------------------------------------------------------------------------------------------------------
@@ -89,8 +89,7 @@ create unlogged table app.session (
   session_id bytea default func.stuid() primary key,
   login_id uuid null references app.login,
   ivkey bytea,
-  app_data jsonb default '{}'::jsonb not null,
-  system_data jsonb default '{}'::jsonb not null,
+  data jsonb null,
   created_at timestamptz default func.stime_now() not null,
   expire_at timestamptz default func.stime_now() + '1 hour'::interval not null
 );
@@ -104,10 +103,10 @@ create table staff.login (
   login varchar not null unique,
   display_name varchar not null,
   locale_name varchar not null references app.locale,
-  n varchar, -- n: for use in newer secure password exchange system, if NULL q is pwcrypted
-  q varchar, -- either bcrypt(password) or bcrypt(sha512(password, n)) if n is not NULL
+  n varchar null, -- n: for use in newer secure password exchange system, if NULL q is pwcrypted
+  q varchar null, -- either bcrypt(password) or bcrypt(sha512(password, n)) if n is not NULL
   allow_google_login boolean not null default false,
-  raw_gauth_response varchar
+  raw_gauth_response varchar null
 );
 select staff.add_history_to_table('login');
 ------------------------------------------------------------------------------------------------------
@@ -142,8 +141,8 @@ execute function func.prevent_change();
 ------------------------------------------------------------------------------------------------------
 create unlogged table staff.session (
   session_id bytea default func.stuid() primary key,
-  login varchar references staff.login (login) on delete cascade, -- can be back filled after creation, so can be NULL
-  data jsonb default '{}'::jsonb not null,
+  login_id uuid references staff.login on delete cascade, -- can be back filled after creation, so can be NULL
+  data jsonb null,
   created_at timestamptz default func.stime_now() not null,
   expire_at timestamptz default func.stime_now() + '1 hour'::interval not null
 );

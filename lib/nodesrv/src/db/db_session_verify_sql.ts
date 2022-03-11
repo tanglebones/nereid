@@ -1,5 +1,5 @@
 export const value = `
-select login_id, app_data, system_data, login.login, login.display_name
+select login_id, data, login.login, login.display_name
 from
   session
     left join login using (login_id)

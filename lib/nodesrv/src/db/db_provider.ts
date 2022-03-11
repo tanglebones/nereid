@@ -29,7 +29,7 @@ export function dbProviderCtor({
     if (!dbs[aKey]) {
       const pgPromiseOptions = {
         query(e: {query: string, params?: unknown, ctx?:{tag?: unknown}}) {
-          debug('[%s %s]: %s %o', aKey, e.ctx?.tag ?? '-', e.query, e.params);
+          debug('[%s %s]: %s %o', aKey, e.ctx?.tag ?? '', e.query, e.params);
         },
       };
 

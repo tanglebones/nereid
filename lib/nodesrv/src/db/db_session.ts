@@ -31,8 +31,7 @@ export const sessionVerify = async (ctx: Pick<ctxBaseType, 'sessionId' | 'sessio
       login_id: string,
       login?: string,
       display_name?: string,
-      app_data?: Record<string, serializableType>,
-      system_data?: Record<string, serializableType>,
+      data?: Record<string, serializableType>,
     } | undefined = await db.oneOrNone(
       verifySql,
       {
@@ -52,11 +51,9 @@ export const sessionVerify = async (ctx: Pick<ctxBaseType, 'sessionId' | 'sessio
         displayName: result.display_name,
       };
 
-      ctx.session = {
-        app: result.app_data || {},
-        system: result.system_data || {},
-      };
+      ctx.session = result.data;
       ctx.dbProviderCtx = toDbProvideCtx(result.login_id, ctx.sessionId, ctx.dbProvider);
+      // todo: load permissions
     }
   });
 
@@ -66,8 +63,7 @@ export const sessionUpdate = async (ctx: Pick<ctxBaseType, 'sessionId' | 'sessio
       updateSql,
       {
         sessionId: ctx.sessionId,
-        appData: ctx.session?.app,
-        systemData: ctx.session?.system,
+        data: ctx.session,
         loginId: ctx.user?.loginId,
       },
     );

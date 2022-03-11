@@ -10,6 +10,7 @@ export const testDbProviderCtor = (
   }
 ) => {
   kind ??= 'app';
+  rollback ??= true;
   const envKey = `PGDB_URL_TEST_${kind.toUpperCase()}`;
   const connectionString = process.env[envKey];
   if (!connectionString) {

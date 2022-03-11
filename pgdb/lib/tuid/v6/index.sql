@@ -25,7 +25,13 @@ create or replace function func.tuid6_from_tz(tz timestamptz)
   language sql
 as
 $$
-select (lpad(to_hex((extract(epoch from tz at time zone 'utc') * 1000) :: bigint), 12, '0') || '00000000000000000000')::uuid;
+select
+  case
+    when tz is null
+      then null
+    else
+      (lpad(to_hex((extract(epoch from tz at time zone 'utc') * 1000) :: bigint), 12, '0') || '00000000000000000000')::uuid
+    end;
 $$;
 
 create or replace function func.tuid6_tz(tuid uuid)
@@ -33,15 +39,22 @@ create or replace function func.tuid6_tz(tuid uuid)
   language sql
 as
 $$
-with t as (
-  select tuid::varchar as x
-)
-select (
-  'x'
-    || substr(t.x, 1, 8) -- xxxxxxxx-0000-0000-0000-000000000000
-    || substr(t.x, 10, 4) -- 00000000-xxxx-0000-0000-000000000000
-  )::bit(64)::bigint * interval '1 millisecond' + timestamptz 'epoch'
-from t;
+with
+  t as (
+    select tuid::varchar as x
+  )
+select
+  case
+    when tuid is null
+      then null
+    else (
+      'x'
+          || substr(t.x, 1, 8) -- xxxxxxxx-0000-0000-0000-000000000000
+          || substr(t.x, 10, 4) -- 00000000-xxxx-0000-0000-000000000000
+      )::bit(64)::bigint * interval '1 millisecond' + timestamptz 'epoch'
+    end
+from
+  t;
 $$;
 
 create function func.tuid6_to_compact(tuid uuid)
@@ -49,7 +62,13 @@ create function func.tuid6_to_compact(tuid uuid)
   language sql
 as
 $$
-select replace(translate(encode(decode(replace(tuid::text, '-', ''), 'hex'), 'base64'), '/+', '-_'), '=', '');
+select
+  case
+    when tuid is null
+      then null
+    else
+      replace(translate(encode(decode(replace(tuid::text, '-', ''), 'hex'), 'base64'), '/+', '-_'), '=', '')
+    end;
 $$;
 
 create function func.tuid6_from_compact(compact varchar)
@@ -57,7 +76,13 @@ create function func.tuid6_from_compact(compact varchar)
   language sql
 as
 $$
-select encode(decode(rpad(translate(compact, '-_', '/+'), 24, '='), 'base64'), 'hex')::uuid;
+select
+  case
+    when compact is null
+      then null
+    else
+      encode(decode(rpad(translate(compact, '-_', '/+'), 24, '='), 'base64'), 'hex')::uuid
+    end;
 $$;
 
 create function func.stuid_to_compact(stuid bytea)
@@ -65,7 +90,13 @@ create function func.stuid_to_compact(stuid bytea)
   language sql
 as
 $$
-select replace(translate(encode(stuid, 'base64'), '/+', '-_'), '=', '');
+select
+  case
+    when stuid is null
+      then null
+    else
+      replace(translate(encode(stuid, 'base64'), '/+', '-_'), '=', '')
+    end;
 $$;
 
 create function func.stuid_from_compact(compact varchar)
@@ -73,10 +104,16 @@ create function func.stuid_from_compact(compact varchar)
   language sql
 as
 $$
-select decode(rpad(translate(compact, '-_', '/+'), 44, '='), 'base64');
+select
+  case
+    when compact is null
+      then null
+    else
+      decode(rpad(translate(compact, '-_', '/+'), 44, '='), 'base64')
+    end;
 $$;
 
-create or replace function stuid()
+create or replace function func.stuid()
   returns bytea
   language plpgsql
 as
@@ -86,25 +123,32 @@ declare
   ret bytea;
 begin
   ct := extract(epoch from clock_timestamp() at time zone 'utc') * 1000;
-  ret := decode(lpad(to_hex(ct), 12, '0'), 'hex') || gen_random_bytes(26);
+  ret := decode(lpad(to_hex(ct), 12, '0'), 'hex') || func.gen_random_bytes(26);
   return ret;
 end;
 $$;
 
 
-create function func.stuid_tz(stuid varchar)
+create function func.stuid_tz(stuid bytea)
   returns timestamptz
   language sql
 as
 $$
-select ('x' || substr(stuid, 1, 12))::bit(64)::bigint * interval '1 millisecond' + timestamptz 'epoch';
+select
+  case
+    when stuid is null
+      then null
+    else
+      ('x' || substr(stuid::text, 1, 12))::bit(64)::bigint * interval '1 millisecond' + timestamptz 'epoch'
+    end;
 $$;
 
 create function func.tuid_zero()
   returns uuid
   immutable
   language sql as
-'select ''00000000-0000-0000-0000-000000000000'' :: uuid';
+'select
+     ''00000000-0000-0000-0000-000000000000'' :: uuid';
 
 create function func.max(uuid, uuid)
   returns uuid as

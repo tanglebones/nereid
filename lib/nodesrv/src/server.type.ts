@@ -17,10 +17,7 @@ export type userInfoType = {
 export type ctxBaseType = {
   sessionId: string;
   settings: serverSettingsType;
-  session?: {
-    app: Record<string, serializableType>,
-    system: Record<string, serializableType>
-  };
+  session?: Record<string, serializableType>,
   permission?: Record<string, boolean>;
   user?: userInfoType;
   dbProviderCtx: dbProviderCtxType;

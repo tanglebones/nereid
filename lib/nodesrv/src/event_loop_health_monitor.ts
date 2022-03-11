@@ -29,12 +29,12 @@ export const eventLoopHealthMonitorCtor= <T>(
     }
   }
 
-// istanbul ignore next: bootstrap
-export const eventLoopHealthMonitor = eventLoopHealthMonitorCtor(
-  () => +Date.now(),
-  setInterval,
-  clearInterval,
-  console.error,
-  +(process.env.NODE_EVENT_LOOP_HEALTH_MONITOR_INTERVAL || '10000'),
-  +(process.env.NODE_EVENT_LOOP_HEALTH_MONITOR_MAX_DRIFT || '100'),
-);
+// example usage:
+// export const eventLoopHealthMonitor = eventLoopHealthMonitorCtor(
+//   () => +Date.now(),
+//   setInterval,
+//   clearInterval,
+//   console.error,
+//   +(process.env.NODE_EVENT_LOOP_HEALTH_MONITOR_INTERVAL || '10000'),
+//   +(process.env.NODE_EVENT_LOOP_HEALTH_MONITOR_MAX_DRIFT || '100'),
+// );

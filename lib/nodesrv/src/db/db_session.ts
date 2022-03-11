@@ -21,12 +21,15 @@ export const sessionCreate = async (ctx: Pick<ctxBaseType, 'sessionId' | 'sessio
     }
 
     ctx.sessionId = result.session_id;
-    ctx.session = {app: {}, system: {}};
     ctx.dbProviderCtx = toDbProvideCtx('-', ctx.sessionId, ctx.dbProvider);
   });
 
 export const sessionVerify = async (ctx: Pick<ctxBaseType, 'sessionId' | 'session' | 'user' | 'dbProvider' | 'dbProviderCtx'>) =>
   ctx.dbProvider('-session-', async db => {
+    if (!ctx.sessionId) {
+      return sessionCreate(ctx);
+    }
+
     const result: {
       login_id: string,
       login?: string,
@@ -42,8 +45,7 @@ export const sessionVerify = async (ctx: Pick<ctxBaseType, 'sessionId' | 'sessio
     debug(`verify result: ${JSON.stringify(result)}`);
 
     if (!result) {
-      ctx.sessionId = '';
-      await sessionCreate(ctx);
+      return sessionCreate(ctx);
     } else {
       ctx.user = {
         login: result.login,
@@ -53,7 +55,7 @@ export const sessionVerify = async (ctx: Pick<ctxBaseType, 'sessionId' | 'sessio
 
       ctx.session = result.data;
       ctx.dbProviderCtx = toDbProvideCtx(result.login_id, ctx.sessionId, ctx.dbProvider);
-      // todo: load permissions
+      // todo: load permissions if result.login_id is set
     }
   });
 

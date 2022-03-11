@@ -8,8 +8,8 @@
   "scripts": {
     "sql_to_ts": "sql_to_ts",
     "build": "tsc",
-    "test": "NODE_ENV=test PGDB_URL_TEST=postgres://eg_app:app@localhost:5414/eg_test mocha",
-    "cover": "nyc mocha",
+    "test": "NODE_ENV=test PGDB_URL_TEST_APP=postgres://eg_test_app:app@localhost:5414/eg_test PGDB_URL_TEST_STAFF=postgres://eg_test_staff:staff@localhost:5414/eg_test mocha",
+    "cover": "NODE_ENV=test PGDB_URL_TEST_APP=postgres://eg_test_app:app@localhost:5414/eg_test PGDB_URL_TEST_STAFF=postgres://eg_test_staff:staff@localhost:5414/eg_test nyc mocha",
     "lint": "eslint src --ext .js,.jsx,.ts,.tsx",
     "doc": "npx typedoc src/*.ts src/**/*.ts --out dist/doc"
   },

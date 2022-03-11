@@ -1,64 +1,55 @@
 // istanbul ignore file
 // will add tests once it is stable
 
-import {ctxType, contentHandlerType, ctxReqType, reqHandlerType} from './server.type';
+import {contentHandlerType, ctxReqType, ctxType, reqHandlerType} from './server.type';
 import {resolvedVoid} from '@nereid/anycore';
 import {toDbProvideCtx} from './db/db_util';
 import {sessionVerify} from './db/db_session';
 import {ctxHost} from './ctx';
+import debugCtor from 'debug';
 
-export type sessionInitCtorType = (settings: Record<string,unknown>) => reqHandlerType;
+const debug = debugCtor('session');
 
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
-export function sessionInitCtor(_settings: Record<string,unknown>): reqHandlerType {
-  async function sessionInit(ctx: ctxReqType): Promise<void> {
+export const sessionInitCtor = (_settings: Record<string,unknown>): reqHandlerType =>
+  async (ctx: ctxReqType) => {
     const sessionIdFromCookie = ctx.cookie.find(e => e[0] === 'SessionId');
     if (sessionIdFromCookie) {
       ctx.sessionId = sessionIdFromCookie[1];
     }
 
     await sessionVerify(ctx);
-  }
-  return sessionInit;
-}
+  };
 
-export type sessionSetCtorType = (settings: {
-  schema: string;
-  host: string;
-}) => contentHandlerType;
-
-export function sessionSetCtor(
+export const sessionSetCtor = (
   settings: {
     schema: string;
   } & Record<string,unknown>
-  ): contentHandlerType {
-  function sessionSet(ctx: ctxType): Promise<void> {
+  ): contentHandlerType =>
+  (ctx: ctxType) => {
     ctxHost(ctx);
-    console.log('Session Host:', ctx.host);
+    debug('Session Host:', ctx.host);
 
     if (ctx.host) {
       // SameSite=Lax is required for the redirect from GoogleAuth back to our server to send cookies in Chrome.
-      ctx.res.setHeader('Set-Cookie', `SessionId=${ctx.sessionId}; HttpOnly; Path=/; SameSite=None; Domain=${ctx.host}; Max-Age=3600${settings.schema === 'https' ? '; Secure' : ''}`);
+      // it is also now required for localhost dev to work cause chrome is shite.
+      // And installing SSL certs for localhost as a work around is STUPID. Especially since SSL termination is done at the LB!
+      ctx.res.setHeader('Set-Cookie', `SessionId=${ctx.sessionId}; HttpOnly; Path=/; SameSite=Lax; Domain=${ctx.host}; Max-Age=3600${settings.schema === 'https' ? '; Secure' : ''}`);
     }
     // update ctx.db to use the sessionId as the tracking tag.
-    ctx.dbProviderCtx = toDbProvideCtx(ctx.user?.login||'-', ctx.sessionId, ctx.dbProvider);
+    ctx.dbProviderCtx = toDbProvideCtx(ctx.user?.login || '-', ctx.sessionId, ctx.dbProvider);
     return resolvedVoid;
-  }
-  return sessionSet;
-}
+  };
 
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
-export function sessionInfoCtor(_settings: Record<string,unknown>): contentHandlerType {
-  function sessionInfo(ctx: ctxType): Promise<void> {
+export const sessionInfoCtor = (_settings: Record<string,unknown>): contentHandlerType =>
+  (ctx: ctxType) => {
     if (ctx.url.path !== '/session') {
       return resolvedVoid;
     }
-    const { res } = ctx;
-    res.setHeader('content-type','application/json');
+    const {res} = ctx;
+    res.setHeader('content-type', 'application/json');
     res.statusCode = 200;
-    res.write(JSON.stringify(ctx.user));
-    res.end();
+    res.end(JSON.stringify(ctx.user));
     return resolvedVoid;
-  }
-  return sessionInfo;
-}
+  };

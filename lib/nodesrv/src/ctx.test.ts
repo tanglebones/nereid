@@ -1,8 +1,10 @@
-import {_internal_, ctxCtor, ctxBody, ctxHost} from './ctx';
+import {ctxCtor, ctxBody, ctxHost} from './ctx';
 import assert from 'assert';
 import {ctxType} from './server.type';
 import {dbProviderStub} from './db/db_provider.stub';
 import sinon from 'sinon';
+import {parseUrl} from "./parse_url";
+import {parseCookie} from "./parse_cookie";
 
 function commonChecks(ctx: ctxType, res: any, req: any) {
   assert.strictEqual(ctx.sessionId, '');
@@ -47,23 +49,23 @@ describe('ctxCtor', () => {
   });
 
   it('Nothing', () => {
-    assert.deepStrictEqual(_internal_.parseUrl(''), {path: '/', params: []});
+    assert.deepStrictEqual(parseUrl(''), {path: '/', params: []});
   });
 
   it('No query params', () => {
-    assert.deepStrictEqual(_internal_.parseUrl('/hello'), {path: '/hello', params: []});
+    assert.deepStrictEqual(parseUrl('/hello'), {path: '/hello', params: []});
   });
 
   it('No cookie', () => {
-    assert.deepStrictEqual(_internal_.parseCookie(''), []);
+    assert.deepStrictEqual(parseCookie(''), []);
   });
 
   it('Bad cookie', () => {
-    assert.deepStrictEqual(_internal_.parseCookie('a=; b; '), [['a', ''], ['b', ''], ['', '']]);
+    assert.deepStrictEqual(parseCookie('a=; b; '), [['a', ''], ['b', ''], ['', '']]);
   });
 
   it('Bad params', () => {
-    assert.deepStrictEqual(_internal_.parseUrl('?c&d=&'), {path: '/', params: [['c', ''], ['d', ''], ['', '']]});
+    assert.deepStrictEqual(parseUrl('?c&d=&'), {path: '/', params: [['c', ''], ['d', ''], ['', '']]});
   });
 });
 

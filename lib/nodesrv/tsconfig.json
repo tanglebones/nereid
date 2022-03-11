@@ -5,15 +5,7 @@
   ],
   "compilerOptions": {
     "outDir": "dist",
-    "rootDir": "src",
-    "typeRoots": [
-      "../../node_modules/@types",
-      "typings"
-    ],
-    "types": [
-      "mocha",
-      "node"
-    ]
+    "rootDir": "src"
   },
   "exclude": [
     "dist",

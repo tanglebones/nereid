@@ -79,14 +79,8 @@ export type serverSettingsType = {
   host: string;
   port: string | number;
   schema: string;
-  mode?: 'client' | 'staff',
-  google?: {
-    secret: string;
-    redirectUri: string;
-    id: string;
-  },
   appUrl: string,
-  dbConnectionString: string,
+  sessionExpiryIntervalMs?: number,
   [key: string]: serializableType,
 };
 

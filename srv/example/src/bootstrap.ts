@@ -1,10 +1,34 @@
-import {randomFillSync} from "crypto";
-import {tuidFactoryCtor} from "@nereid/nodecore";
+import {serverFactoryCtor} from "@nereid/nodesrv";
+import {createServer} from "http";
+import {eventLoopHealthMonitorCtor} from "@nereid/nodesrv/dist/event_loop_health_monitor";
+import {clearInterval} from "timers";
+import {cancellationTokenFactoryCtor} from "@nereid/anycore";
+import {dbProviderCtor} from "@nereid/nodesrv/dist/db/db_provider";
+import {exitCtor} from "@nereid/nodesrv/dist/exit";
 
 const nowMs = () => +new Date();
+const cancellationTokenFactory = cancellationTokenFactoryCtor();
 
-export const tuidFactory = tuidFactoryCtor(
-  randomFillSync,
+eventLoopHealthMonitorCtor(
   nowMs,
-)
+  setInterval,
+  clearInterval,
+  console.error,
+  +(process.env.NODE_EVENT_LOOP_HEALTH_MONITOR_INTERVAL || '10000'),
+  +(process.env.NODE_EVENT_LOOP_HEALTH_MONITOR_MAX_DRIFT || '100'),
+);
+
+const appConnectionString = process.env.PGDB_URL_APP;
+if (!appConnectionString) {
+  throw new Error("PGDB_URL_APP not set");
+}
+
+const staffConnectionString = process.env.PGDB_URL_APP;
+if (!staffConnectionString) {
+  throw new Error("PGDB_URL_APP not set");
+}
+export const exit = exitCtor(process, cancellationTokenFactory);
+export const appDbProvider = dbProviderCtor({connectionString: appConnectionString, application_name: 'ep_app'});
+export const staffDbProvider = dbProviderCtor({connectionString: staffConnectionString, application_name: 'ep_staff'});
+export const serverFactory = serverFactoryCtor(createServer, setInterval);
 

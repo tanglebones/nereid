@@ -7,11 +7,11 @@ import {toDbProvideCtx} from "./db/db_util";
 import {parseUrl} from "./parse_url";
 import {parseCookie} from "./parse_cookie";
 
-export function ctxReqCtor(
+export const ctxReqCtor = (
   req: IncomingMessage,
   dbProvider: dbProviderType,
   settings: serverSettingsType,
-): ctxReqType {
+): ctxReqType => {
   const url = parseUrl(req.url?.toString() || '/');
   const cookie = parseCookie(req.headers.cookie);
   const dbProviderCtx = toDbProvideCtx('-', '-', dbProvider);
@@ -25,19 +25,19 @@ export function ctxReqCtor(
     settings,
     remoteAddress: req.socket?.remoteAddress || '',
   };
-}
+};
 
-export function ctxCtor(req: IncomingMessage, res: ServerResponse, dbProvider: dbProviderType, settings: serverSettingsType): ctxType {
+export const ctxCtor = (req: IncomingMessage, res: ServerResponse, dbProvider: dbProviderType, settings: serverSettingsType): ctxType => {
   const ctx = ctxReqCtor(req, dbProvider, settings) as ctxType;
   ctx.res = res;
   return ctx;
-}
+};
 
-export function ctxSetDb(ctx: { user?: { login?: string }, sessionId: string, dbProvider: dbProviderType, db?: dbProviderCtxType }): void {
+export const ctxSetDb = (ctx: { user?: { login?: string }, sessionId: string, dbProvider: dbProviderType, db?: dbProviderCtxType }): void => {
   ctx.db = toDbProvideCtx(ctx?.user?.login || '-', ctx.sessionId, ctx.dbProvider);
-}
+};
 
-export async function ctxBody(ctx: Pick<ctxType, 'body'> & Object.P.Pick<ctxType, ['req', 'method' | 'on']> & Object.P.Pick<ctxType, ['res', 'statusCode' | 'setHeader' | 'end']>, maxBodyLength = 1e6): Promise<boolean> {
+export const ctxBody = async (ctx: Pick<ctxType, 'body'> & Object.P.Pick<ctxType, ['req', 'method' | 'on']> & Object.P.Pick<ctxType, ['res', 'statusCode' | 'setHeader' | 'end']>, maxBodyLength = 1e6): Promise<boolean> => {
   if (ctx.body) {
     return resolvedTrue;
   }
@@ -67,15 +67,18 @@ export async function ctxBody(ctx: Pick<ctxType, 'body'> & Object.P.Pick<ctxType
       r(true);
     });
   });
-}
+};
 
-export function ctxHost(ctx: Pick<ctxType, 'req' | 'host'>): void {
+export const ctxHost = (ctx: Pick<ctxType, 'req' | 'host'>): void => {
   if (ctx.host) {
     return;
   }
   const hostHdr = ctx.req.headers.host;
-  const m = hostHdr?.match(/([^.]+\.)*(?<tld>[^.:]+\.[^.:]+)(:\d+)?$/);
+  if (!hostHdr) {return;}
+  if (hostHdr.match(/\blocalhost\b/)){
+    ctx.host = 'localhost';
+    return;
+  }
+  const m = hostHdr.match(/([^.]+\.)*(?<tld>[^.:]+\.[^.:]+)(:\d+)?$/);
   ctx.host = m?.groups?.tld;
-}
-
-export const _internal_ = {parseUrl, parseCookie};
+};

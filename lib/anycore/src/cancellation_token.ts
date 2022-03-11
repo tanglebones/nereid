@@ -10,7 +10,7 @@ export type cancellationTokenType = {
   waitForCancellation: (timeoutMilliseconds?: number) => Promise<boolean>,
 };
 
-export const cancellationTokenFactorCtor = () => {
+export const cancellationTokenFactoryCtor = () => {
   let id = 1;
   return () => {
     const cancellationCallbacks = registryFactory<cancellationCallbackType>();

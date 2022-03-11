@@ -10,12 +10,12 @@ const debug = debugCtor('db');
 const dbs: Record<string, dbType> = {};
 const rolledBackError = new Error('rolledback');
 
-export function dbProviderCtor({
+export const dbProviderCtor = ({
   connectionString,
   application_name,
   preExec,
   rollback
-}: { connectionString: string, application_name?: string, preExec?: string, rollback?: boolean }): dbProviderType {
+}: { connectionString: string, application_name?: string, preExec?: string, rollback?: boolean }): dbProviderType => {
   let tag = 0;
   async function dbProvider<T>(
     auditUser: string,
@@ -60,4 +60,4 @@ export function dbProviderCtor({
   }
 
   return dbProvider;
-}
+};

@@ -1,7 +1,7 @@
 import assert from 'assert';
-import {cancellationTokenFactorCtor} from "./cancellation_token";
+import {cancellationTokenFactoryCtor} from "./cancellation_token";
 
-const cancellationTokenFactory = cancellationTokenFactorCtor();
+const cancellationTokenFactory = cancellationTokenFactoryCtor();
 
 describe('cancellationToken', () => {
   it('called the onCancellationCallbacks in the right order', () => {

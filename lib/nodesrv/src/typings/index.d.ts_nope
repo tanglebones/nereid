@@ -1,5 +1,6 @@
 // sigh, doesn't work when using mocha for tests :(
-
+// left here to indicate it was tried and didn't work.
+// it also breaks nyc
 declare module '*.sql' {
   const content: string;
   export default content;

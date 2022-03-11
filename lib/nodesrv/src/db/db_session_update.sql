@@ -1,6 +1,6 @@
 update session
-set expire_at = current_timestamp + '1 hour'::interval,
-  app_data=$(app_data),
-  system_data=$(system_data),
-  login_id=$(login_id)
-where session_id = decode($(sessionId), 'hex');
+set expire_at = stime_now() + '1 hour'::interval,
+  app_data=$(appData),
+  system_data=$(systemData),
+  login_id=tuid6_from_compact($(loginId))
+where session_id = stuid_from_compact($(sessionId));

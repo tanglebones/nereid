@@ -12,7 +12,7 @@ export type dbType = {
   one: <T>(query: string, binds?: Record<string, serializableType>) => Promise<T>,
   none: (query: string, binds?: Record<string, serializableType>) => Promise<undefined>,
   oneOrNone: <T>(query: string, binds?: Record<string, serializableType>) => Promise<T | undefined>,
-  tx: <T>(callback: (db: dbType) => Promise<T>) => Promise<T>,
+  tx: (<T>(opts: { tag?: number }, callback: (db: dbType) => Promise<T>) => Promise<T>)
   result: (query: string, binds?: Record<string, serializableType>) => Promise<dbResult | undefined>,
 };
 

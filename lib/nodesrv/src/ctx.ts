@@ -1,40 +1,11 @@
-import {ctxReqType, ctxType, serverSettingsType, urlType} from './server.type';
+import {ctxReqType, ctxType, serverSettingsType} from './server.type';
 import {IncomingMessage, ServerResponse} from 'http';
 import {dbProviderType, dbProviderCtxType} from './db/db_provider.type';
 import {resolvedFalse, resolvedTrue} from '@nereid/anycore';
 import {Object} from 'ts-toolbelt';
 import {toDbProvideCtx} from "./db/db_util";
-
-function parseUrl(rawUrl: string): urlType {
-  const m = rawUrl.match(/^\/?(?<path>([^/?]\/?)*)(\?(?<params>.*$))?/);
-  // istanbul ignore next
-  // -- unreachable branch, but necessary for type safety
-  if (!m || !m.groups) {
-    // istanbul ignore next
-    // -- unreachable branch, but necessary for type safety
-    return {path: '/', params: []};
-  }
-
-  const path = '/' + m.groups.path;
-  let params: [string, string][] = [];
-  if (m.groups.params) {
-    params = m.groups.params.split('&').map(p => {
-      const x = p.split('=');
-      return [decodeURIComponent(x[0]), decodeURIComponent(x[1] || '')];
-    });
-  }
-  return {path, params};
-}
-
-function parseCookie(cookie: string | undefined): [string, string][] {
-  if (!cookie) {
-    return [];
-  }
-  return cookie.split('; ').map(p => {
-    const x = p.split('=');
-    return [decodeURIComponent(x[0]), decodeURIComponent(x[1] || '')];
-  });
-}
+import {parseUrl} from "./parse_url";
+import {parseCookie} from "./parse_cookie";
 
 export function ctxReqCtor(
   req: IncomingMessage,
@@ -43,15 +14,14 @@ export function ctxReqCtor(
 ): ctxReqType {
   const url = parseUrl(req.url?.toString() || '/');
   const cookie = parseCookie(req.headers.cookie);
-  const db = toDbProvideCtx('-', '-', dbProvider);
+  const dbProviderCtx = toDbProvideCtx('-', '-', dbProvider);
   return {
     req,
     url,
-    session: {},
     sessionId: '',
     cookie,
     dbProvider,
-    db,
+    dbProviderCtx,
     settings,
     remoteAddress: req.socket?.remoteAddress || '',
   };

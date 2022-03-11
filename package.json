@@ -7,6 +7,10 @@
     "srv/*",
     "pgdb/*"
   ],
+  "scripts": {
+    "build_libs": "for lib in anycore nodecore webcore nodecore nodesrv; do pushd lib/$lib && npm run build && popd; done",
+    "reset_pgdb_eg": "PATH=%PATH:/c/pg/14/bin:$PATH && pushd pgdb/db/example/ && ./setup.sh && popd"
+  },
   "devDependencies": {
     "@nereid/sql_to_ts": "*",
     "@types/debug": "^4.1.7",

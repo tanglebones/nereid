@@ -71,8 +71,9 @@ create table app.login_1_mfa_app (
 select app.add_history_to_table('login_1_mfa_app');
 ------------------------------------------------------------------------------------------------------
 create table app.access_log (
+  access_log_id uuid default func.tuid6() primary key,
   bearer_token varchar not null, -- NOT references, we want to retain the logs if login is deleted.
-  at timestamptz default clock_timestamp() primary key,
+  at timestamptz default func.stime_clock(),
   success boolean not null,
   note varchar not null default '',
   remote_address varchar not null
@@ -90,8 +91,8 @@ create unlogged table app.session (
   ivkey bytea,
   app_data jsonb default '{}'::jsonb not null,
   system_data jsonb default '{}'::jsonb not null,
-  created_at timestamptz default current_timestamp not null,
-  expire_at timestamptz default current_timestamp + '1 hour'::interval not null
+  created_at timestamptz default func.stime_now() not null,
+  expire_at timestamptz default func.stime_now() + '1 hour'::interval not null
 );
 ------------------------------------------------------------------------------------------------------
 set search_path = app, func;
@@ -126,8 +127,9 @@ create table staff.login_1_mfa_app (
 select staff.add_history_to_table('login_1_mfa_app');
 ------------------------------------------------------------------------------------------------------
 create table staff.access_log (
+  access_log_id uuid default func.tuid6() primary key,
   login varchar not null, -- NOT references, we want to retain the logs if login is deleted.
-  at timestamptz default clock_timestamp() primary key,
+  at timestamptz default func.stime_clock(),
   result varchar not null check (result in ('+', '-')),
   remote_address varchar not null
 );
@@ -139,11 +141,11 @@ create trigger access_log_append_only_tg
 execute function func.prevent_change();
 ------------------------------------------------------------------------------------------------------
 create unlogged table staff.session (
-  session_id bytea default stuid() primary key,
+  session_id bytea default func.stuid() primary key,
   login varchar references staff.login (login) on delete cascade, -- can be back filled after creation, so can be NULL
   data jsonb default '{}'::jsonb not null,
-  created_at timestamptz default current_timestamp not null,
-  expire_at timestamptz default current_timestamp + '1 hour'::interval not null
+  created_at timestamptz default func.stime_now() not null,
+  expire_at timestamptz default func.stime_now() + '1 hour'::interval not null
 );
 create index session_user_id on staff.session (login, created_at);
 
@@ -153,8 +155,8 @@ set search_path = staff, func;
 
 ------------------------------------------------------------------------------------------------------
 
-create table staff.app_login_ivkey (
-  app_login_id uuid references app.login,
+create table staff.app_login_1_ivkey (
+  app_login_id uuid references app.login primary key ,
   ivkey bytea not null
 );
 select staff.add_history_to_table('app_login_ivkey');
@@ -178,11 +180,11 @@ begin
 
   insert
   into
-    staff.app_login_ivkey (app_login_id, ivkey)
+    staff.app_login_1_ivkey (app_login_id, ivkey)
   values (new.login_id, func.gen_random_bytes(48))
   on conflict do nothing;
 
-  select ivkey into ivkey_ from staff.app_login_ivkey where app_login_id = new.login_id;
+  select ivkey into ivkey_ from staff.app_login_1_ivkey where app_login_id = new.login_id;
   new.ivkey = ivkey_;
   return new;
 end;

@@ -60,6 +60,22 @@ $$
 select encode(decode(rpad(translate(compact, '-_', '/+'), 24, '='), 'base64'), 'hex')::uuid;
 $$;
 
+create function func.stuid_to_compact(stuid bytea)
+  returns varchar
+  language sql
+as
+$$
+select replace(translate(encode(stuid, 'base64'), '/+', '-_'), '=', '');
+$$;
+
+create function func.stuid_from_compact(compact varchar)
+  returns bytea
+  language sql
+as
+$$
+select decode(rpad(translate(compact, '-_', '/+'), 44, '='), 'base64');
+$$;
+
 create or replace function stuid()
   returns bytea
   language plpgsql

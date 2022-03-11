@@ -9,21 +9,21 @@ export type urlType = {
 }
 
 export type userInfoType = {
-  login_id: string;
+  loginId: string;
   login?: string;
-  display_name?: string;
+  displayName?: string;
 };
 
 export type ctxBaseType = {
   sessionId: string;
   settings: serverSettingsType;
   session?: {
-    app?: Record<string, serializableType>,
-    system?: Record<string, serializableType>
+    app: Record<string, serializableType>,
+    system: Record<string, serializableType>
   };
   permission?: Record<string, boolean>;
   user?: userInfoType;
-  db: dbProviderCtxType;
+  dbProviderCtx: dbProviderCtxType;
   dbProvider: dbProviderType;
   remoteAddress: string;
 };

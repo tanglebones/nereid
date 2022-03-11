@@ -217,7 +217,7 @@ export const wsInit = (
             sessionId: ctx.sessionId,
             session: ctx.session,
             user: ctx.user,
-            db: ctx.db,
+            dbProviderCtx: ctx.dbProviderCtx,
             dbProvider: ctx.dbProvider,
             permission: ctx.permission,
             requests: registryFactory<requestType>(),

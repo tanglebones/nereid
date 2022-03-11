@@ -1,1 +1,1 @@
-delete from session where session_id = decode($(sessionId), 'hex');
+delete from session where session_id = stuid_from_compact($(sessionId));

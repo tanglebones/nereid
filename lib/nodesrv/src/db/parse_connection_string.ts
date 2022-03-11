@@ -1,17 +1,14 @@
-import {IConnectionParameters} from "pg-promise/typescript/pg-subset";
-
-export const parseConnectionString = (connectionString: string): { connectionParameters: IConnectionParameters, key: string } => {
-  const m = connectionString.match(/^postgres:\/\/(?<user>[^:@]+)(:(?<password>[^@]+))?@(?<host>[^:]+):(?<port>[^/]+)\/(?<database>[^?]+)/);
-  if (!m || !m.groups?.user || !m.groups?.host || !m.groups?.database) {
+export const parseConnectionString = (connectionString: string) => {
+  const m = connectionString.match(/^postgres:\/\/(?<user>[^:@]+):(?<password>[^@]+)@(?<host>[^:]+):(?<port>[^/]+)\/(?<database>[^?]+)/);
+  if (!m || !m.groups?.user || !m.groups?.password || !m.groups?.host || !m.groups?.port || !m.groups?.database) {
     throw new Error('Invalid connection string: ' + connectionString);
   }
   const user = m.groups.user;
   const host = m.groups.host;
-  const port = +(m.groups.port || '5432');
+  const port = +m.groups.port;
   const database = m.groups.database;
-  const password = m.groups.password || '';
-  const connectionParameters: IConnectionParameters = {
-    application_name: 'ems',
+  const password = m.groups.password;
+  const connectionParameters = {
     database,
     host,
     port,
@@ -19,7 +16,6 @@ export const parseConnectionString = (connectionString: string): { connectionPar
     password,
     ssl: host === 'localhost' ? false : {rejectUnauthorized: false},
   };
-  const key = `user ${user}, host ${host}:${port} db ${database}`;
+  const key = `${user}@${host}:${port}/${database}`;
   return {connectionParameters, key};
 };
-export const internal = {parseConnectionString};

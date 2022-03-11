@@ -41,7 +41,7 @@ export function sessionSetCtor(
       ctx.res.setHeader('Set-Cookie', `SessionId=${ctx.sessionId}; HttpOnly; Path=/; SameSite=None; Domain=${ctx.host}; Max-Age=3600${settings.schema === 'https' ? '; Secure' : ''}`);
     }
     // update ctx.db to use the sessionId as the tracking tag.
-    ctx.db = toDbProvideCtx(ctx.user?.login||'-', ctx.sessionId, ctx.dbProvider);
+    ctx.dbProviderCtx = toDbProvideCtx(ctx.user?.login||'-', ctx.sessionId, ctx.dbProvider);
     return resolvedVoid;
   }
   return sessionSet;

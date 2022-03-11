@@ -1,7 +1,7 @@
 export const value = `
-INSERT INTO
-  session
-DEFAULT VALUES
-RETURNING encode(session_id, 'hex') AS session_id;
+insert into session
+  default
+values
+returning stuid_to_compact(session_id) as session_id;
 
 `;

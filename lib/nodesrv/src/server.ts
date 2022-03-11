@@ -76,7 +76,7 @@ export function server(
     ha = [sessionInit, sessionSet, sessionInfo, ...handlerArray];
   }
 
-  const dbProvider = dbProviderCtor(settings.dbConnectionString);
+  const dbProvider = dbProviderCtor({connectionString: settings.dbConnectionString});
 
   async function requestHandler(req: IncomingMessage, res: ServerResponse): Promise<void> {
     try {

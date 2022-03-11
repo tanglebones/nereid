@@ -22,11 +22,11 @@ const crClientResponseEg = (r: string, nb64: string, salt: string, password: str
   return {fb64};
 };
 
-function testCrCtor() {
+const testCrCtor = () => {
   const secureTokenFactory = secureTokenFactoryCtor("asdf", stuidForTestingFactoryCtor());
   const randomBytes = (n: number) => Buffer.alloc(n, 0);
   return crCtor(secureTokenFactory, () => 0, randomBytes);
-}
+};
 
 describe('cr', () => {
   const cr = testCrCtor();

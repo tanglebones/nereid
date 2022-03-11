@@ -10,7 +10,7 @@ const critical = debugCtor('critical:db:permission');
 // This function should be given an array of unique permission_names, without duplicates,
 // so the looping order shouldn't matter.
 
-export function permissionResolve(permissionOperations: { permission_name: string, relation_type: string }[]): permissionsType {
+export const permissionResolve = (permissionOperations: { permission_name: string, relation_type: string }[]): permissionsType => {
   const permissions: permissionsType = {};
 
   for (const {permission_name: permissionName, relation_type: relType} of permissionOperations) {
@@ -33,4 +33,4 @@ export function permissionResolve(permissionOperations: { permission_name: strin
     }
   }
   return permissions;
-}
+};

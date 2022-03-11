@@ -6,13 +6,13 @@ import sinon from 'sinon';
 import {parseUrl} from "./parse_url";
 import {parseCookie} from "./parse_cookie";
 
-function commonChecks(ctx: ctxType, res: any, req: any) {
+const commonChecks = (ctx: ctxType, res: any, req: any) => {
   assert.strictEqual(ctx.sessionId, '');
   assert.strictEqual(ctx.user, undefined);
   assert.deepStrictEqual(ctx.session, {});
   assert.strictEqual(ctx.res, res);
   assert.strictEqual(ctx.req, req);
-}
+};
 
 describe('ctxCtor', () => {
   it('basics', async () => {

@@ -177,7 +177,7 @@ export const wsInit = (
 
   type IncomingMessageEx = IncomingMessage & { _: { ctx: ctxReqType } };
 
-  wss.on('headers', function (headers: string[], req: IncomingMessage) {
+  wss.on('headers', (headers: string[], req: IncomingMessage) => {
     const hostHdr = req.headers.host;
     const m = hostHdr?.match(/([^.]+\.)*(?<tld>[^.:]+\.[^.:]+)(:\d+)?$/);
     const host = m?.groups?.tld;
@@ -191,7 +191,7 @@ export const wsInit = (
     }
   });
 
-  server.on('upgrade', async function upgrade(req: IncomingMessage, socket: Socket, head: Buffer) {
+  server.on('upgrade', async (req: IncomingMessage, socket: Socket, head: Buffer) => {
     try {
       const ctx = ctxReqCtor(req, dbProvider, settings);
       const pathname = ctx.url.path;
@@ -206,7 +206,7 @@ export const wsInit = (
       // this is a hack to get the ctx to the headers event where we need the sessionId
       reqEx._ = {ctx};
 
-      wss.handleUpgrade(req, socket, head, function done(ws) {
+      wss.handleUpgrade(req, socket, head, ws => {
         try {
           const wsX: webSocketExtendedType = ws as webSocketExtendedType;
           wsX.isAlive = true;

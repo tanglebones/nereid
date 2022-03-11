@@ -1,13 +1,11 @@
 import {dbProviderCtxType, dbProviderType, dbType} from './db_provider.type';
 import {DateTime, Duration} from 'luxon';
 
-export function toDbProvideCtx(auditUser: string, trackingTag: string, dbProvider: dbProviderType): dbProviderCtxType {
-  return function <T>(callback: (db: dbType) => Promise<T>): Promise<T|undefined> {
-    return dbProvider(auditUser, callback, trackingTag);
-  }
-}
+export const toDbProvideCtx = (auditUser: string, trackingTag: string, dbProvider: dbProviderType): dbProviderCtxType =>
+  <T>(callback: (db: dbType) => Promise<T>): Promise<T | undefined> =>
+    dbProvider(auditUser, callback, trackingTag);
 
-export function parseDbTimeStampTZ(datetime?: string): DateTime | undefined {
+export const parseDbTimeStampTZ = (datetime?: string): DateTime | undefined => {
   if (!datetime) {
     return undefined;
   }
@@ -18,9 +16,9 @@ export function parseDbTimeStampTZ(datetime?: string): DateTime | undefined {
     // -- can't get Luxon to error in testing.
     return undefined;
   }
-}
+};
 
-export function parseDbMilliseconds(ms?: string): Duration | undefined {
+export const parseDbMilliseconds = (ms?: string): Duration | undefined => {
   if (!ms) {
     return undefined;
   }
@@ -31,4 +29,4 @@ export function parseDbMilliseconds(ms?: string): Duration | undefined {
     // -- can't get Luxon to error in testing.
     return undefined;
   }
-}
+};

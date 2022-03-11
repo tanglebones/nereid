@@ -17,18 +17,18 @@ export const dbProviderCtor = ({
   rollback
 }: { connectionString: string, application_name?: string, preExec?: string, rollback?: boolean }): dbProviderType => {
   let tag = 0;
-  async function dbProvider<T>(
+  return async <T>(
     auditUser: string,
     callback: (db: dbType) => Promise<T>,
     trackingTag = '',
-  ): Promise<T | undefined> {
+  ): Promise<T | undefined> => {
     application_name ??= process.env.PGDB_APP_NAME ?? process.env.HOSTNAME ?? `${process.pid}`;
     const {connectionParameters, key} = parseConnectionString(connectionString);
     const aKey = `${application_name} ${key}`;
 
     if (!dbs[aKey]) {
       const pgPromiseOptions = {
-        query(e: {query: string, params?: unknown, ctx?:{tag?: unknown}}) {
+        query(e: { query: string, params?: unknown, ctx?: { tag?: unknown } }) {
           debug('[%s %s]: %s %o', aKey, e.ctx?.tag ?? '', e.query, e.params);
         },
       };
@@ -57,7 +57,5 @@ export const dbProviderCtor = ({
       }
     }
     return t;
-  }
-
-  return dbProvider;
+  };
 };

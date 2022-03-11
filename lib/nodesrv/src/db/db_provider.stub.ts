@@ -19,17 +19,11 @@ export const dbProviderStub = (sinon: sinonType): {
     db[toStub] = sinon.stub();
   });
 
-  async function wrapperFull<T>(_auditUser: string, q: (db: dbType) => Promise<T>, _trackingTag = ''): Promise<T> {
-    return q(db);
-  }
+  const wrapperFull = async <T>(_auditUser: string, q: (db: dbType) => Promise<T>, _trackingTag = ''): Promise<T> => q(db);
 
-  async function wrapperAnon<T>(q: (db: dbType) => Promise<T>, _trackingTag = ''): Promise<T> {
-    return q(db);
-  }
+  const wrapperAnon = async <T>(q: (db: dbType) => Promise<T>, _trackingTag = ''): Promise<T> => q(db);
 
-  async function wrapperCtx<T>(q: (db: dbType) => Promise<T>): Promise<T> {
-    return q(db);
-  }
+  const wrapperCtx = async <T>(q: (db: dbType) => Promise<T>): Promise<T> => q(db);
 
   const dbProvider = sinon.spy(wrapperFull);
   const dbProviderAnon = sinon.spy(wrapperAnon);

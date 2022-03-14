@@ -1,26 +1,7 @@
 import {crCtor} from './cr';
 import assert from 'assert';
-import {createHash, createHmac} from "crypto";
-import bcrypt from "bcryptjs";
-import {bufferXor, stuidForTestingFactoryCtor} from "@nereid/nodecore";
+import {stuidForTestingFactoryCtor} from "@nereid/nodecore";
 import {secureTokenFactoryCtor} from "./stoken";
-
-const crClientSetupInitEg = (password: string, nb64: string) => {
-  const n = Buffer.from(nb64, 'base64');
-  const hpnb64 = createHash('sha512').update(password).update(n).digest('base64');
-  return {hpnb64: hpnb64};
-};
-
-const crClientResponseEg = (r: string, nb64: string, salt: string, password: string) => {
-  const n = Buffer.from(nb64, 'base64');
-  const hpn = createHash('sha512').update(password).update(n).digest();
-  const hpns = String.fromCharCode(...hpn);
-  const q = bcrypt.hashSync(hpns, salt);
-  const cc = createHmac('sha512', r).update(q).digest();
-  const f = bufferXor(hpn, cc);
-  const fb64 = f.toString('base64');
-  return {fb64};
-};
 
 const testCrCtor = () => {
   const secureTokenFactory = secureTokenFactoryCtor("asdf", stuidForTestingFactoryCtor());
@@ -41,13 +22,13 @@ describe('cr', () => {
     // -- send nb64 to client
 
     // client
-    const {hpnb64} = crClientSetupInitEg(password, nb64);
+    const {hpnb64} = cr.clientInit(password, nb64);
     // -- send hpn64 to server
 
     // server
     const {q} = cr.serverSetup(hpnb64);
-    // -- stores n, q, r='' against username.
 
+    // -- stores n, q, r='' against username.
 
     // -- LOGIN
 
@@ -55,10 +36,10 @@ describe('cr', () => {
     const {r} = cr.serverInitChallenge();
     // -- store r against username
     // -- send nb64, r, salt to client
+    const salt = cr.getSalt(q); // -- q is *not* sent to the client!
 
     // client
-    const salt = cr.getSalt(q);
-    const {fb64} = crClientResponseEg(r, nb64, salt, password);
+    const {fb64} = cr.clientResponse(r, nb64, salt, password);
 
     // -- send fb64 to server
 
@@ -83,7 +64,7 @@ describe('cr', () => {
     // -- send nb64 to client
 
     // client
-    const {hpnb64} = crClientSetupInitEg(password, nb64);
+    const {hpnb64} = cr.clientInit(password, nb64);
     // -- send hpn64 to server
 
     // server
@@ -100,7 +81,7 @@ describe('cr', () => {
 
     // client
     const salt = cr.getSalt(q);
-    const {fb64} = crClientResponseEg(r, nb64, salt, 'testing124');
+    const {fb64} = cr.clientResponse(r, nb64, salt, 'testing124');
 
     // -- send fb64 to server
 
@@ -121,7 +102,7 @@ describe('cr', () => {
     const salt = "$2a$10$mnymedWwVuipoNpzlfYPs."
     const password = 'asdfasdf';
 
-    const {fb64} = crClientResponseEg(r, nb64, salt, password);
+    const {fb64} = cr.clientResponse(r, nb64, salt, password);
     const fb64Expected = "hMXJUBYERTverlr01LIz9Kq8ky9V3zIDT2oou3CfMn19CZz9Zx4FNs6uO7/BXHRMT6L0nzgdRIMo3a3eW5x+RQ==";
     assert(fb64 === fb64Expected);
   });
@@ -151,7 +132,7 @@ describe('cr.serverVerify', () => {
     const password = 'testing123';
     const {nb64} = cr.serverInit();
     const r = '0005c0a9c411d7d83e5885b626410f476d74aaafe3c7233bbbbfd46c2606109ce0c9adef89b3e98bff6c7433d500c636a443fa3407eb2d29ed1ee7f17fb9a307';
-    const {hpnb64} = crClientSetupInitEg(password, nb64);
+    const {hpnb64} = cr.clientInit(password, nb64);
     const {q} = cr.serverSetup(hpnb64);
 
     assert.strictEqual(

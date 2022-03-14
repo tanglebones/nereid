@@ -87,9 +87,7 @@ describe('gauth.init', () => {
   });
 
   it('Ignores others paths', async () => {
-    const {ctx, subject, secureTokenFactory} = getSut({login: 'user_login_mock', path: '/gauth/init'});
-
-    ctx.url.path = '/gauth/init';
+    const {ctx, subject, secureTokenFactory} = getSut({login: 'user_login_mock', path: '/asdf'});
 
     await subject.init(ctx);
 
@@ -101,13 +99,16 @@ describe('gauth.init', () => {
 
 describe('gauth.resume', () => {
   it('Happy Path', async () => {
-    const {userVivify, poster, ctx, idTokenJson, axiosData, subject} = getSut({
+    const {userVivify, poster, ctx, idTokenJson, axiosData, secureTokenFactory, subject} = getSut({
       login: 'user_login_mock',
       path: '/gauth/resume',
       params: [['state', 'stoken'], ['code', '4code']]
     });
+    secureTokenFactory.verify.returns('stoken');
 
     await subject.resume(ctx);
+
+    sinon.assert.calledOnceWithExactly(secureTokenFactory.verify, 'stoken');
 
     sinon.assert.calledOnceWithExactly(
       poster,
@@ -135,15 +136,18 @@ describe('gauth.resume', () => {
     );
 
     sinon.assert.calledOnce(ctx.res.end);
-  })
-  ;
+  });
 
   it('No user', async () => {
-    const {userVivify, poster, ctx, idTokenJson, axiosData, subject} = getSut({
+    const {userVivify, poster, ctx, idTokenJson, axiosData, secureTokenFactory, subject} = getSut({
       path: '/gauth/resume',
       params: [['state', 'stoken'], ['code', '4code']]
     });
+    secureTokenFactory.verify.returns('stoken');
+
     await subject.resume(ctx);
+
+    sinon.assert.calledOnceWithExactly(secureTokenFactory.verify, 'stoken');
 
     sinon.assert.calledOnceWithExactly(
       poster,
@@ -174,7 +178,7 @@ describe('gauth.resume', () => {
   });
 
   it('Handles invalid jwt', async () => {
-    const {userVivify, poster, ctx, subject} = getSut({
+    const {userVivify, poster, ctx, secureTokenFactory, subject} = getSut({
       path: '/gauth/resume',
       params: [['state', 'stoken'], ['code', '4code']],
       axiosData: {
@@ -182,8 +186,11 @@ describe('gauth.resume', () => {
         other: 'stuff',
       }
     });
+    secureTokenFactory.verify.returns('stoken');
 
     await subject.resume(ctx);
+
+    sinon.assert.calledOnceWithExactly(secureTokenFactory.verify, 'stoken');
 
     sinon.assert.calledOnceWithExactly(
       poster,
@@ -206,12 +213,10 @@ describe('gauth.resume', () => {
   });
 
   it('Handles invalid stoken', async () => {
-    const {userVivify, poster, ctx, subject, secureTokenFactory} = getSut({
+    const {userVivify, poster, ctx, subject} = getSut({
       path: '/gauth/resume',
       params: [['state', 'stoken'], ['code', '4code']],
     });
-
-    secureTokenFactory.verify.returns(undefined);
 
     await subject.resume(ctx);
 

@@ -1,4 +1,4 @@
-import {createHmac} from 'crypto';
+import {createHash, createHmac} from 'crypto';
 import bcrypt from 'bcryptjs';
 import {bufferXor, stuidEpochMilli} from '@nereid/nodecore';
 
@@ -118,11 +118,30 @@ export const crCtor = (
     return q === v;
   };
 
+  const clientInit = (password: string, nb64: string) => {
+    const n = Buffer.from(nb64, 'base64');
+    const hpnb64 = createHash('sha512').update(password).update(n).digest('base64');
+    return {hpnb64: hpnb64};
+  };
+
+  const clientResponse = (r: string, nb64: string, salt: string, password: string) => {
+    const n = Buffer.from(nb64, 'base64');
+    const hpn = createHash('sha512').update(password).update(n).digest();
+    const hpns = String.fromCharCode(...hpn);
+    const q = bcrypt.hashSync(hpns, salt);
+    const cc = createHmac('sha512', r).update(q).digest();
+    const f = bufferXor(hpn, cc);
+    const fb64 = f.toString('base64');
+    return {fb64};
+  };
+
   return {
-    serverInit,
     getSalt,
+    serverInit,
     serverSetup,
     serverInitChallenge,
     serverVerify,
+    clientInit,
+    clientResponse,
   };
 }

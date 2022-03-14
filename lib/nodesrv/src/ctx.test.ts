@@ -9,7 +9,7 @@ import {parseCookie} from "./parse_cookie";
 const commonChecks = (ctx: ctxType, res: any, req: any) => {
   assert.strictEqual(ctx.sessionId, '');
   assert.strictEqual(ctx.user, undefined);
-  assert.deepStrictEqual(ctx.session, {});
+  assert.deepStrictEqual(ctx.session, undefined);
   assert.strictEqual(ctx.res, res);
   assert.strictEqual(ctx.req, req);
 };
@@ -21,7 +21,7 @@ describe('ctxCtor', () => {
       headers: {
         cookie: 'c=3; d=4',
       },
-      connection: {remoteAddress: 'aoeu'},
+      socket: {remoteAddress: 'aoeu'},
     };
     const res: any = {};
     const db = dbProviderStub(sinon);

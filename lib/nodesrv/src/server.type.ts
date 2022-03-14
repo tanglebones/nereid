@@ -80,7 +80,12 @@ export type serverSettingsType = {
   port: string | number;
   schema: string;
   appUrl: string,
-  sessionExpiryIntervalMs?: number,
+  session?: {
+    enabled: boolean,
+    expiry?: number,
+    expiryIntervalMs?: number,
+    cookieName?: string,
+  }
   [key: string]: serializableType,
 };
 

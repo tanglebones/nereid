@@ -25,11 +25,15 @@ export const serverFactoryCtor = (createServer: createServerType, setInterval: s
   settings: serverSettingsType,
   handlerArray: contentHandlerType[],
 ) => {
-  const sessionInit = sessionInitCtor(settings);
-  const sessionSet = sessionSetCtor(settings);
-  const sessionInfo = sessionInfoCtor(settings);
+  const ha: contentHandlerType[] = [...handlerArray];
 
-  const ha = [sessionInit, sessionSet, sessionInfo, ...handlerArray] as contentHandlerType[];
+  if (settings.session?.enabled) {
+    const sessionInit = sessionInitCtor(settings);
+    const sessionSet = sessionSetCtor(settings);
+    const sessionInfo = sessionInfoCtor(settings);
+
+    ha.unshift(sessionInit, sessionSet, sessionInfo);
+  }
 
   const runHandlerArray = async (ctx: ctxType) => {
     for (const handler of ha) {
@@ -45,7 +49,9 @@ export const serverFactoryCtor = (createServer: createServerType, setInterval: s
       const ctx = ctxCtor(req, res, dbProvider, settings);
 
       await runHandlerArray(ctx);
-      await sessionUpdate(ctx);
+      if (settings.session?.enabled) {
+        await sessionUpdate(ctx);
+      }
 
       if (!res.writableEnded) {
         handleNotFound(res);
@@ -68,7 +74,7 @@ export const serverFactoryCtor = (createServer: createServerType, setInterval: s
       // best we can do for now is log it as there is no request here to return an error to.
       console.error(e);
     }
-  }, settings.sessionExpiryIntervalMs ?? 60000);
+  }, settings.session?.expiryIntervalMs ?? 60000);
 
   server.listen(+settings.port, settings.host);
 

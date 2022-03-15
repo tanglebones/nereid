@@ -11,9 +11,7 @@
   "exclude": [
     "**/*.test.ts",
     "**/*.type.ts",
-    "**/*.provider.ts",
-    "**/bootstrap.ts",
-    "src/app/*/index.ts"
+    "src/index.ts"
   ],
   "check-coverage": true,
   "statements": 100,

@@ -3,10 +3,10 @@ import assert from 'assert';
 import {stuidForTestingFactoryCtor} from "@nereid/nodecore";
 import {secureTokenFactoryCtor} from "./stoken";
 
-const testCrCtor = () => {
+const testCrCtor = (nowMs = 0) => {
   const secureTokenFactory = secureTokenFactoryCtor("asdf", stuidForTestingFactoryCtor());
   const randomBytes = (n: number) => Buffer.alloc(n, 0);
-  return crCtor(secureTokenFactory, () => 0, randomBytes);
+  return crCtor(secureTokenFactory, () => nowMs, randomBytes);
 };
 
 describe('cr', () => {
@@ -121,13 +121,13 @@ describe('cr.serverSetup', () => {
 });
 
 describe('cr.serverVerify', () => {
-  const cr = testCrCtor();
+  const cr = testCrCtor(3e10);
 
   it('Returns false if the stoken cannot be verified', () => {
     assert.strictEqual(cr.serverVerify('fb64', 'r', 'q'), false);
   });
 
-  it('Returns false if the stuid is not old enough', () => {
+  it('Returns false if the stuid is too old.', () => {
     // setup based on 'basics' test
     const password = 'testing123';
     const {nb64} = cr.serverInit();

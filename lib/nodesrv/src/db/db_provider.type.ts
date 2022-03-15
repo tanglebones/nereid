@@ -8,7 +8,7 @@ export type dbResult = {
 };
 
 export type dbType = {
-  any: <T>(query: string, binds?: Record<string, serializableType>) => Promise<Iterator<T>>,
+  any: <T>(query: string, binds?: Record<string, serializableType>) => Promise<Iterable<T>>,
   one: <T>(query: string, binds?: Record<string, serializableType>) => Promise<T>,
   none: (query: string, binds?: Record<string, serializableType>) => Promise<undefined>,
   oneOrNone: <T>(query: string, binds?: Record<string, serializableType>) => Promise<T | undefined>,

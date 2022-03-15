@@ -1,7 +1,9 @@
 import {testDbProviderCtor} from "./test_db_provider_ctx";
-import {sessionCreate, sessionDelete, sessionUpdate, sessionVerify} from "./db_session";
+import {sessionCreate, sessionDelete, sessionExpire, sessionUpdate, sessionVerify} from "./db_session";
 import assert from "assert";
 import {dbType} from "./db_provider.type";
+import sinon from "sinon";
+import {dbProviderStub} from "./db_provider.stub";
 
 describe('sessionCreate', () => {
   it('basic app flow works and assigns ivkey', async () => {
@@ -51,6 +53,24 @@ describe('sessionCreate', () => {
 
           assert(!session.login_id);
           assert(!session.ivkey); // user not given yet, so no ivkey is assigned.
+        }
+
+        {
+          // verify works without a login_id
+          await sessionUpdate({
+            sessionId,
+            dbProvider,
+            dbProviderCtx,
+            session: {be: {test: 1}}
+          } as any);
+
+          const ctx: any = {
+            sessionId,
+            dbProvider,
+            dbProviderCtx
+          }
+          await sessionVerify(ctx);
+          assert.deepStrictEqual(ctx.session, {be: {test: 1}});
         }
 
         {
@@ -309,12 +329,11 @@ describe('sessionCreate', () => {
         {
           // new session
           const ctx: any = {
-            sessionId: "",
             dbProvider,
             dbProviderCtx,
           };
 
-          await sessionCreate(ctx);
+          await sessionVerify(ctx); // Verify will create if no sessionId is given,
           assert.notEqual(sessionId, ctx.sessionId);
           sessionId = ctx.sessionId;
 
@@ -356,7 +375,58 @@ describe('sessionCreate', () => {
           // session data is saved
           assert.deepStrictEqual(session.data, {fe: {}, be: {redirect: '/home'}});
         }
+
+        {
+          // expired session
+          const ctx: any = {
+            sessionId: 'AX_KsdSnQHN3VFcoCvee-kfsYEnET286x4DE0aFqg6Q',
+            dbProvider,
+            dbProviderCtx,
+          };
+
+          await sessionVerify(ctx); // Verify will create if no sessionId finds no valid session
+          assert.notEqual(sessionId, ctx.sessionId);
+        }
+
+        {
+          // sessionId is invalid
+          const ctx: any = {
+            sessionId: 'AX',
+            dbProvider,
+            dbProviderCtx,
+          };
+
+          await sessionVerify(ctx); // Verify will create if sessionId is not a valid sessionId.
+          assert.notEqual(sessionId, ctx.sessionId);
+        }
+
+        {
+          // sessions expire
+          const {n0} = await db.one<{ n0: number }>('select count(session_id) as n0 from session;');
+          assert(+n0 > 0);
+          await db.none(`set local "stime.now" to '2022-02-01T00:00:00Z';set local "stime.now_inc" to '1 second';`);
+
+          await sessionExpire(dbProvider);
+          // pgPromise returns counts as strings because they are 64-bit and may not fit in a ieee double.
+          const {n1} = await db.one<{ n1: number }>('select count(session_id) as n1 from session;');
+          assert.strictEqual(+n1, 0);
+        }
       });
     });
+  });
+
+  it("throws if no session_id assigned", async () => {
+    const {dbProvider, db} = dbProviderStub(sinon);
+    db.one.resolves({});
+    const ctx: any = {
+      dbProvider,
+    }
+
+    try {
+      await sessionCreate(ctx);
+      assert.fail("did not throw");
+    } catch {
+      assert.ok(true);
+    }
   });
 });

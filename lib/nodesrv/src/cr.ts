@@ -87,9 +87,9 @@ export const crCtor = (
   /*
   -- 20. Server validates R, and atomically updates Username.R to '' against the R provided, on failure aborts.
          (i.e. only allow the R to be used once to login.)
-  -- 21. Server computes C_s = HMAC(Q, R) // sign Q using R to generate a key
-  -- 22. Server computes T_s = XOR(F, C_s) //
-  -- 23. Server computes H(T_s) and compares it with Q (looked up from Username)
+  -- 21. Server computes Cs = HMAC(Q, R) // sign Q using R to generate a key
+  -- 22. Server computes HPN = XOR(F, Cs) //
+  -- 23. Server computes bcrypt(HPN, salt) and compares it with Q (looked up from Username)
 
   R is validated against the user before calling verify
 
@@ -98,6 +98,7 @@ export const crCtor = (
   HPN is decrypted from F using Cs
   if bcrypt(HPN, salt) matches Q the password the client had must be a match.
   */
+  const tenMinutesMs = 10 * 60 * 60 * 1000;
 
   const serverVerify = (fb64: string, r: string, q: string) => {
     const s = secureToken.verify(r);
@@ -105,8 +106,9 @@ export const crCtor = (
       return false;
     }
     const ts = stuidEpochMilli(s);
-    const tenMinutesAgoEpochMilli = (nowMs() - 10 * 60 * 60);
-    if (ts < tenMinutesAgoEpochMilli) {
+
+    const tenMinutesAgoEpochMs = nowMs() - tenMinutesMs;
+    if (ts < tenMinutesAgoEpochMs) {
       return false;
     }
     const f = Buffer.from(fb64, 'base64');

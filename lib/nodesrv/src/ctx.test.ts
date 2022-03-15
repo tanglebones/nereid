@@ -82,7 +82,7 @@ describe('ctxBody', () => {
     }
     onStub.callCount = 0
 
-    const ctxStub = {
+    const ctxStub: any = {
       body: undefined,
       req: <any>{
         on: onStub,
@@ -100,7 +100,7 @@ describe('ctxBody', () => {
   });
 
   it('Resolves true if there is already a ctx.body', async () => {
-    const ctxStub = {
+    const ctxStub: any = {
       body: "Shredder!! Why haven't you completed my new body!?",
       req: <any>{},
       res: <any>{},
@@ -110,7 +110,7 @@ describe('ctxBody', () => {
   });
 
   it('Resolves false if there is no ctx.body and the request is not a POST', async () => {
-    const ctxStub = {
+    const ctxStub: any = {
       req: <any>{},
       res: <any>{
         setHeader: sinon.stub(),
@@ -136,7 +136,7 @@ describe('ctxBody', () => {
     }
     onStub.callCount = 0
 
-    const ctxStub = {
+    const ctxStub: any = {
       req: <any>{
         on: onStub,
         method: 'POST',
@@ -157,7 +157,7 @@ describe('ctxBody', () => {
 
 describe('ctxHost', () => {
   it('Sets ctx.host', async () => {
-    const ctxStub = {
+    const ctxStub: any = {
       host: undefined,
       req: <any>{
         headers: {
@@ -171,8 +171,22 @@ describe('ctxHost', () => {
     assert.strictEqual(ctxStub.host, 'domain.tld');
   });
 
+  it('No header', async () => {
+    const ctxStub: any = {
+      host: undefined,
+      req: <any>{
+        headers: {
+        },
+      },
+      res: <any>{},
+    }
+
+    ctxHost(ctxStub);
+    assert.strictEqual(ctxStub.host, undefined);
+  });
+
   it('Does nothing if there is already a host', async () => {
-    const ctxStub = {
+    const ctxStub: any = {
       host: 'domain.tld',
       req: <any>{},
       res: <any>{},

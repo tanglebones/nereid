@@ -1,5 +1,6 @@
 // istanbul ignore file
 // -- wrapper
+// -- can probably have some of the logic lifted out and tested...
 
 import pgPromise from 'pg-promise';
 import {dbProviderType, dbType} from './db_provider.type';

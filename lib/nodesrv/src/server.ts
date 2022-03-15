@@ -1,3 +1,7 @@
+// istanbul ignore file
+// -- wrapper around node's createServer call
+// -- can probably have some of the logic lifted out and tested...
+
 import {contentHandlerType, ctxType, serverSettingsType} from "./server.type";
 import {Server, IncomingMessage, ServerResponse} from "http";
 import {sessionInfoCtor, sessionInitCtor, sessionSetCtor} from "./session";
@@ -66,15 +70,17 @@ export const serverFactoryCtor = (createServer: createServerType, setInterval: s
 
   const server = createServer(requestHandler);
 
-  setInterval(async () => {
-    try {
-      // noinspection JSIgnoredPromiseFromCall
-      await sessionExpire(dbProvider);
-    } catch (e) {
-      // best we can do for now is log it as there is no request here to return an error to.
-      console.error(e);
-    }
-  }, settings.session?.expiryIntervalMs ?? 60000);
+  if (settings.session?.enabled) {
+    setInterval(async () => {
+      try {
+        // noinspection JSIgnoredPromiseFromCall
+        await sessionExpire(dbProvider);
+      } catch (e) {
+        // best we can do for now is log it as there is no request here to return an error to.
+        console.error(e);
+      }
+    }, settings.session?.expiryIntervalMs ?? 60000);
+  }
 
   server.listen(+settings.port, settings.host);
 

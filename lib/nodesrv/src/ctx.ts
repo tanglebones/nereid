@@ -1,8 +1,7 @@
 import {ctxReqType, ctxType, serverSettingsType} from './server.type';
 import {IncomingMessage, ServerResponse} from 'http';
-import {dbProviderType, dbProviderCtxType} from './db/db_provider.type';
+import {dbProviderType} from './db/db_provider.type';
 import {resolvedFalse, resolvedTrue} from '@nereid/anycore';
-import {Object} from 'ts-toolbelt';
 import {toDbProvideCtx} from "./db/db_util";
 import {parseUrl} from "./parse_url";
 import {parseCookie} from "./parse_cookie";
@@ -33,11 +32,7 @@ export const ctxCtor = (req: IncomingMessage, res: ServerResponse, dbProvider: d
   return ctx;
 };
 
-export const ctxSetDb = (ctx: { user?: { login?: string }, sessionId: string, dbProvider: dbProviderType, db?: dbProviderCtxType }): void => {
-  ctx.db = toDbProvideCtx(ctx?.user?.login || '-', ctx.sessionId, ctx.dbProvider);
-};
-
-export const ctxBody = async (ctx: Pick<ctxType, 'body'> & Object.P.Pick<ctxType, ['req', 'method' | 'on']> & Object.P.Pick<ctxType, ['res', 'statusCode' | 'setHeader' | 'end']>, maxBodyLength = 1e6): Promise<boolean> => {
+export const ctxBody = async (ctx: ctxType, maxBodyLength = 1e6): Promise<boolean> => {
   if (ctx.body) {
     return resolvedTrue;
   }
@@ -69,16 +64,10 @@ export const ctxBody = async (ctx: Pick<ctxType, 'body'> & Object.P.Pick<ctxType
   });
 };
 
-export const ctxHost = (ctx: Pick<ctxType, 'req' | 'host'>): void => {
+export const ctxHost = (ctx: ctxType): void => {
   if (ctx.host) {
     return;
   }
-  const hostHdr = ctx.req.headers.host;
-  if (!hostHdr) {return;}
-  if (hostHdr.match(/\blocalhost\b/)){
-    ctx.host = 'localhost';
-    return;
-  }
-  const m = hostHdr.match(/([^.]+\.)*(?<tld>[^.:]+\.[^.:]+)(:\d+)?$/);
+  const m = ctx.req.headers.host?.match(/([^.]+\.)*(?<tld>[^.:]+\.[^.:]+)(:\d+)?$/);
   ctx.host = m?.groups?.tld;
 };

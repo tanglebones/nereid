@@ -5,8 +5,8 @@ export const timerGuardCtor = (
 ) =>
   // eslint-disable-next-line @typescript-eslint/explicit-module-boundary-types
   async <T>(promise: Promise<T>,
-            message: string,
-            logOverMs = 1000
+    message: string,
+    logOverMs: number
   ) => {
     const start = getTimeMs();
     try {

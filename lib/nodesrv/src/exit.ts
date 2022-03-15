@@ -1,4 +1,6 @@
-// istanbul ignore -- wrapper around node's process exit
+// istanbul ignore file
+
+// wrapper around node's process exit
 // probably not needed, as several process.on event handlers could be used instead.
 import {cancellationTokenType} from "@nereid/anycore";
 

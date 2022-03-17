@@ -5,6 +5,7 @@ export * from './memoize';
 export * from './promise_state';
 export * from './pub_sub';
 export * from './pub_sub_play';
+export * from './rate_limit';
 export * from './readonly_registry';
 export * from './registry';
 export * from './resolved';

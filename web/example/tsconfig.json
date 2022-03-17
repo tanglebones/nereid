@@ -5,10 +5,7 @@
   ],
   "compilerOptions": {
     "outDir": "dist",
-    "rootDir": "src",
-    "lib": [
-      "dom"
-    ]
+    "rootDir": "src"
   },
   "exclude": [
     "dist",
@@ -17,7 +14,13 @@
   ],
   "references": [
     {
-      "path": "../anycore/"
+      "path": "../../lib/nodesrv"
+    },
+    {
+      "path": "../../lib/nodecore"
+    },
+    {
+      "path": "../../lib/anycore"
     }
   ]
 }

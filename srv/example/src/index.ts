@@ -22,7 +22,7 @@ main(async () => {
 
   // todo read from env
   const staffSettings: serverSettingsType = {
-    port: 8081,
+    port: 8800,
     host: '127.0.0.1',
     schema: 'http',
     appUrl: 'http://api.example.xxx',

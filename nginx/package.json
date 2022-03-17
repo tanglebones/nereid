@@ -1,0 +1,10 @@
+{
+  "name": "@nereid/nginx",
+  "private": true,
+  "version": "0.0.0",
+  "scripts": {
+    "run": "node ./nginx.conf.js && ./nginx.exe -c ./nginx.conf"
+  },
+  "author": "Cliff Hammerschmidt",
+  "license": "MIT"
+}

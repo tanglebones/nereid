@@ -14,7 +14,7 @@
     "**/*.type.ts",
     "**/*.provider.ts",
     "**/bootstrap.ts",
-    "src/index.ts"
+    "src/index.tsx"
   ],
   "check-coverage": true,
   "statements": 100,

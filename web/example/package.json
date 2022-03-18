@@ -2,21 +2,15 @@
   "name": "@nereid/web_example",
   "version": "0.1.0",
   "description": "",
-  "main": "dist/index.js",
-  "types": "./dist/index.d.ts",
+  "source": "src/index.html",
   "scripts": {
-    "start": "NODE_ENV=production node dist/index.js",
-    "dev": "DEBUG=db NODE_ENV=development PGDB_URL_APP=postgres://eg_app:app@localhost:5414/eg PGDB_URL_STAFF=postgres://eg_staff:staff@localhost:5414/eg ts-node src/index.ts",
-    "build": "tsc",
-    "test": "NODE_ENV=test PGDB_URL_TEST_APP=postgres://eg_test_app:app@localhost:5414/eg_test PGDB_URL_TEST_STAFF=postgres://eg_test_staff:staff@localhost:5414/eg_test mocha",
-    "cover": "NODE_ENV=test PGDB_URL_TEST_APP=postgres://eg_test_app:app@localhost:5414/eg_test PGDB_URL_TEST_STAFF=postgres://eg_test_staff:staff@localhost:5414/eg_test nyc mocha",
-    "lint": "eslint src --ext .js,.jsx,.ts,.tsx",
-    "doc": "npx typedoc src/*.ts src/**/*.ts --out dist/doc"
+    "build": "parcel build src/index.html"
   },
   "author": "",
   "license": "MIT",
   "dependencies": {
+    "@nereid/anycore": "*",
     "@nereid/webcore": "*",
-    "@nereid/anycore": "*"
+    "@nereid/webreactexample": "*"
   }
 }

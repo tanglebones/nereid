@@ -9,7 +9,7 @@
     "pgdb/*"
   ],
   "scripts": {
-    "build_libs": "for lib in anycore nodecore webcore nodecore nodesrv; do pushd lib/$lib && npm run build && popd; done",
+    "build_libs": "for lib in anycore nodecore webcore nodecore nodesrv webreactexample; do pushd lib/$lib && npm run build && popd; done",
     "reset_pgdb_eg": "PATH=%PATH:/c/pg/14/bin:$PATH && pushd pgdb/db/example/ && ./setup.sh && popd"
   },
   "devDependencies": {

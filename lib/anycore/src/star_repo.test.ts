@@ -1,26 +1,27 @@
-import * as assert from 'assert';
-import {starRepositoryCtorCtor, stateModifierFunctionType} from './star_repo';
+import assert from 'assert';
+import {starRepositoryFactoryCtor, starRepositoryType, stateModifierFunctionType} from './star_repo';
 import {serializableType} from './serialize';
 import {Draft} from 'immer';
 import {tuidForTestingFactoryCtor} from "@nereid/nodecore";
 
 describe('starRepo', () => {
+  const append = (eventParams: serializableType, state: Draft<Record<string, serializableType>>) => {
+    Object.assign(state, eventParams);
+  };
+
+  const remove = (eventParams: serializableType, state: Draft<Record<string, serializableType>>) => {
+    const params = eventParams as Record<string, unknown>;
+    const what = params?.['what'];
+    if (typeof what === 'string' && state) {
+      delete state[what as string];
+    }
+  };
+
+  const exception = (_eventParams: serializableType, _state: Draft<Record<string, serializableType>>) => {
+    throw new Error('oops');
+  };
+
   it('basics', async () => {
-    function append(eventParams: serializableType, state: Draft<Record<string, serializableType>>): void {
-      Object.assign(state, eventParams);
-    }
-
-    function remove(eventParams: serializableType, state: Draft<Record<string, serializableType>>): void {
-      const params = eventParams as Record<string, unknown>;
-      const what = params?.['what'];
-      if (typeof what === 'string' && state) {
-        delete state[what as string];
-      }
-    }
-
-    function exception(_eventParams: serializableType, _state: Draft<Record<string, serializableType>>): void {
-      throw new Error('oops');
-    }
 
     const eventRegistry = {append, remove, exception} as Readonly<Record<string, stateModifierFunctionType>>;
 
@@ -36,7 +37,7 @@ describe('starRepo', () => {
       errors.push({error, details});
     }
 
-    const src = starRepositoryCtorCtor(tuidForTestingFactoryCtor(100));
+    const src = starRepositoryFactoryCtor(tuidForTestingFactoryCtor(100));
     const sr = src(
       eventRegistry,
       onLocal,
@@ -134,5 +135,41 @@ describe('starRepo', () => {
     await sr.onRemote('{"clientId":"00000000006400000000000000000000","event":{},"eventId":"00000000006d00000000000000000000","eventRegistrySignature":"438b04a2f67f6943","postEventSignature":"399479ffa4646446"}');
     await sr.onRemote('{"clientId":"00000000006400000000000000000000","event":{"name":"-"},"eventId":"00000000006d00000000000000000000","eventRegistrySignature":"438b04a2f67f6943","postEventSignature":"399479ffa4646446"}');
 
+  });
+
+  it('muli-client example', async () => {
+    const srf = starRepositoryFactoryCtor(tuidForTestingFactoryCtor(100));
+
+
+    const eventRegistry = {append, remove} as Readonly<Record<string, stateModifierFunctionType>>;
+
+    const errors: { error: string, details: Record<string, unknown> }[] = [];
+
+    function onError(error: string, details: Record<string, unknown>): void {
+      errors.push({error, details});
+    }
+
+    // need to use pubSubPlay so me can control the play back and interleave it.
+    const clients = [] as starRepositoryType[];
+    const toClients = async (m: string) => {
+      await Promise.all(clients.map(c => c.onRemote(m)));
+    }
+
+    const srServer = srf(eventRegistry, toClients, onError, 'ignore');
+
+    const toServer = (m: string) => srServer.onRemote(m);
+
+    const srClient1 = srf(eventRegistry, toServer, onError);
+    const srClient2 = srf(eventRegistry, toServer, onError);
+    const srClient3 = srf(eventRegistry, toServer, onError);
+    clients.push(srClient1, srClient2, srClient3);
+
+    // send some commands to the registry
+    await srClient1.apply('append', {a: 1});
+    await srClient2.apply('append', {b: 2});
+    await srClient3.apply('append', {c: 3});
+    await srClient3.apply('remove', {what: 'c'});
+
+    assert.strictEqual(0, errors.length);
   });
 });

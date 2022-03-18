@@ -3,7 +3,6 @@ import {deserialize, serializableType, serialize} from './serialize';
 import {signature, signatureObjectKeys} from "./signature";
 
 type immutableSerializableType = Immutable<serializableType>;
-
 export type stateModifierFunctionType = (eventParams: serializableType, state: Draft<serializableType>) => void;
 
 export type eventType = {
@@ -32,10 +31,11 @@ export type starRepositoryType = {
 // Designed for where you have a single threaded websocket server that each
 // client is sending events too and the server relays to all connected clients
 // in the same order.
-export const starRepositoryCtorCtor = (tuidFactory: () => string) => (
+export const starRepositoryFactoryCtor = (tuidFactory: () => string) => (
   eventRegistry: Readonly<Record<string, stateModifierFunctionType>>,
   onLocal: (message: string) => Promise<void>,
   onError: (error: string, details: Record<string, unknown>) => void,
+  stateSigMode: 'enforce'|'ignore' = 'enforce', // on the server this should be 'ignore' if the events are commutative, on clients it should be 'enforce'.
   initialState: serializableType = {},
 ): starRepositoryType => {
   const clientId = tuidFactory();
@@ -116,7 +116,7 @@ export const starRepositoryCtorCtor = (tuidFactory: () => string) => (
       state = produce(headState, x => stateModifier(event.params, x));
 
       computeStateSignature(true);
-      if (eventPacket.postEventSignature !== sig) {
+      if (stateSigMode === 'enforce' && eventPacket.postEventSignature !== sig) {
         onError('ON_REMOTE_STATE_SIGNATURE_MISMATCH', {
           signature: sig,
           postEventSignature: eventPacket.postEventSignature,

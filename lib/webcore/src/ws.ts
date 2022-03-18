@@ -1,7 +1,6 @@
 import {serializableType} from '@nereid/anycore';
 import {DateTime, Duration} from 'luxon';
 import {tuidFactory} from "./tuid_factory";
-import stringify from "json-stable-stringify";
 
 export const deps = {window};
 export type wsHandlerType = (params: serializableType) => Promise<serializableType>;

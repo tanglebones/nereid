@@ -10,7 +10,7 @@ describe('delay', () => {
     const end = Date.now();
     const diff = end - start;
 
-    assert(diff < 110);
+    assert(diff < 150); // can really vary.
     assert(diff >= 100);
   });
 

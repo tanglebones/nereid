@@ -1,6 +1,6 @@
 import {IncomingMessage, ServerResponse} from 'http';
 import WebSocket from 'ws';
-import {serializableType, registryType} from '@nereid/anycore';
+import {serializableType} from '@nereid/anycore';
 import {dbProviderType, dbProviderCtxType} from './db/db_provider.type';
 
 export type urlType = {
@@ -52,7 +52,7 @@ export type requestType = {
 export type ctxWsType = ctxBaseType & {
   ws: webSocketExtendedType,
   call(name: string, params: serializableType): Promise<serializableType>,
-  requests: registryType<requestType>,
+  requests: Record<string, requestType>,
 }
 
 export type ctxType = ctxReqType & {

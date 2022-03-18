@@ -1,4 +1,3 @@
-import {registryType} from "./registry";
 import {pubSubMessageHandlerType} from "./pub_sub";
 
 export type pubSubPlayType = {
@@ -14,12 +13,15 @@ export type pubSubPlayType = {
  * @param tuidFactory
  * @param registryFactory
  */
-export const pubSubPlayCtorCtor = (tuidFactory: () => string, registryFactory: <T>() => registryType<T>) =>
-  () => {
-    const subs = registryFactory<pubSubMessageHandlerType>();
-    const pendingMessages: string[] = [];
+export const pubSubPlayCtorCtor = (tuidFactory: () => string) =>
+  () => {    const pendingMessages: string[] = [];
+    const subs = {} as Record<string, pubSubMessageHandlerType>;
 
-    const sub = (handler: pubSubMessageHandlerType) => subs.register(tuidFactory(), handler);
+    const sub = (handler: pubSubMessageHandlerType) => {
+      const id = tuidFactory();
+      subs[id] = handler;
+      return () => delete subs[id];
+    }
 
     const pub = async (message: string)=> {
       pendingMessages.push(message);
@@ -38,8 +40,7 @@ export const pubSubPlayCtorCtor = (tuidFactory: () => string, registryFactory: <
         messages
           .map(
             message =>
-              subs
-                .values
+              Object.values(subs)
                 .map(
                   async handler => handler(message),
                 ),

@@ -5,7 +5,6 @@ import {
   ctxReqType,
   ctxWsType,
   reqHandlerType,
-  requestType,
   serverSettingsType,
   webSocketExtendedType,
   wsHandlerType,
@@ -14,7 +13,7 @@ import {IncomingMessage, Server} from 'http';
 import WebSocket from 'ws';
 import {Socket} from 'net';
 import {ctxReqCtor} from './ctx';
-import {readonlyRegistryType, registryFactory, serializableType} from "@nereid/anycore";
+import {serializableType} from "@nereid/anycore";
 import {dbProviderType} from "./db/db_provider.type";
 import {sessionUpdate} from "./db/db_session";
 
@@ -24,7 +23,7 @@ export type wsType = {
 };
 
 export const wsInit = (
-  wsHandlerRegistry: readonlyRegistryType<wsHandlerType>,
+  wsHandlerRegistry: Readonly<Record<string,wsHandlerType>>,
   server: Server,
   settings: serverSettingsType,
   sessionInit: reqHandlerType,
@@ -49,7 +48,7 @@ export const wsInit = (
       const ss = i.s?.[0];
       if (i.id && i.n && ss === '?') {
         try {
-          const call = wsHandlerRegistry.lookup(i.n);
+          const call = wsHandlerRegistry[i.n];
           if (call) {
             const r = await call(ctxWs, i.a);
             await sessionUpdate(ctxWs);
@@ -72,7 +71,8 @@ export const wsInit = (
           }));
         }
       } else if (i.id && (ss === '+' || ss === '-')) {
-        const req = ctxWs.requests.remove(i.id);
+        const req = ctxWs.requests[i.id];
+        delete ctxWs.requests[i.id];
         if (req) {
           if (ss === '+') {
             req.resolve(i.r);
@@ -105,10 +105,11 @@ export const wsInit = (
 
   setInterval(ping, 30000);
 
-  const ctxWsRegistry = registryFactory<ctxWsType>();
+  const ctxWsRegistry = {} as Record<string, ctxWsType>;
 
   const onClose = async (ctxWs: ctxWsType) => {
-    const removed = ctxWsRegistry.remove(ctxWs.sessionId);
+    const removed = ctxWsRegistry[ctxWs.sessionId];
+    delete ctxWsRegistry[ctxWs.sessionId];
     if (removed) {
       try {
         await wsOnCloseHandler?.(ctxWs);
@@ -116,10 +117,10 @@ export const wsInit = (
         console.error('onClose exception:', e);
       }
 
-      for (const id of ctxWs.requests.names) {
-        if (ctxWs.requests.lookup(id)?.ctxWs === ctxWs) {
-          const p = ctxWs.requests.remove(id);
-          p?.reject({id: p.id, s: '-CC'});
+      for (const [id, req] of Object.entries(ctxWs.requests)) {
+        if (req?.ctxWs === ctxWs) {
+          delete ctxWs.requests[id];
+          req?.reject({id, s: '-CC'});
         }
       }
     }
@@ -145,10 +146,10 @@ export const wsInit = (
   const isActive = (ws: WebSocket | undefined): boolean => ws?.readyState === WebSocket.OPEN;
 
   const processPending = (): void => {
-    ctxWsRegistry.values.forEach(ctx => {
-      const ids = ctx.requests.names;
+    Object.values(ctxWsRegistry).forEach(ctx => {
+      const ids = Object.keys(ctx.requests);
       for (const id of ids) {
-        const r = ctx.requests.lookup(id);
+        const r = ctx.requests[id];
         if (r && isActive(r.ctxWs?.ws) && !r.sent) {
           r.ctxWs.ws?.send(r.data);
           r.sent = true;
@@ -162,14 +163,14 @@ export const wsInit = (
       (resolve, reject) => {
         const id = tuidFactory();
         const data = JSON.stringify({id, n: callName, a: params, s: '?'});
-        ctxWs.requests.register(id, {
+        ctxWs.requests[id] = {
           ctxWs,
           id,
           resolve,
           reject,
           data,
           sent: false,
-        });
+        };
         if (isActive(ctxWs.ws)) {
           processPending();
         }
@@ -220,7 +221,7 @@ export const wsInit = (
             dbProviderCtx: ctx.dbProviderCtx,
             dbProvider: ctx.dbProvider,
             permission: ctx.permission,
-            requests: registryFactory<requestType>(),
+            requests: {},
             call(name: string, params: serializableType): Promise<serializableType> {
               return call(ctxWs, name, params);
             },
@@ -228,14 +229,14 @@ export const wsInit = (
           };
 
           // sessions can't be shared
-          const existingConnection = ctxWsRegistry.lookup(ctxWs.sessionId);
+          const existingConnection = ctxWsRegistry[ctxWs.sessionId];
           if (existingConnection) {
             onClose(existingConnection);
             ctxWs.ws.close();
-            ctxWsRegistry.remove(ctxWs.sessionId);
+            delete ctxWsRegistry[ctxWs.sessionId];
           }
 
-          ctxWsRegistry.register(ctxWs.sessionId, ctxWs);
+          ctxWsRegistry[ctxWs.sessionId] = ctxWs;
 
           wss.emit('connection', ctxWs);
         } catch (e) {

@@ -1,5 +1,3 @@
-import {registryType} from "./registry";
-
 export type pubSubMessageHandlerType = (message: string) => Promise<void>;
 
 export type pubSubType = {
@@ -20,22 +18,19 @@ export type pubSubType = {
  * directly?
  *
  * @param tuidFactory
- * @param registryFactory
  */
-export const pubSubCtorCtor = (tuidFactory: () => string, registryFactory: <T>() => registryType<T>) => {
+export const pubSubCtorCtor = (tuidFactory: () => string) => {
   return () => {
-    const subs = registryFactory<pubSubMessageHandlerType>();
+    const subs = {} as Record<string, pubSubMessageHandlerType>;
 
-    const sub = (handler: pubSubMessageHandlerType) => subs.register(tuidFactory(), handler);
+    const sub = (handler: pubSubMessageHandlerType) => {
+      const id = tuidFactory();
+      subs[id] = handler;
+      return () => delete subs[id];
+    }
 
     const pub = async (message: string) => {
-      await Promise.all(
-        subs
-          .values
-          .map(
-            async handler => handler(message),
-          )
-      );
+      await Promise.all(Object.values(subs).map(async handler => handler(message)));
     };
 
     const r: pubSubType = {pub, sub};

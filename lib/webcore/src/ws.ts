@@ -1,6 +1,7 @@
-import {readonlyRegistryType, registryType, registryFactory, serializableType} from '@nereid/anycore';
+import {serializableType} from '@nereid/anycore';
 import {DateTime, Duration} from 'luxon';
 import {tuidFactory} from "./tuid_factory";
+import stringify from "json-stable-stringify";
 
 export const deps = {window};
 export type wsHandlerType = (params: serializableType) => Promise<serializableType>;
@@ -24,7 +25,7 @@ type requestType = {
 
 export function wsCtor(
   domain: string,
-  callRegistry?: readonlyRegistryType<wsHandlerType>,
+  callRegistry: Readonly<Record<string, wsHandlerType>>,
   onConnectHandler?: () => void,
   onCloseHandler?: () => void,
 ): wsType {
@@ -34,8 +35,8 @@ export function wsCtor(
 
   let lastConnectionAttemptAt = DateTime.utc().minus({minutes: 2});
 
-  const pending: registryType<requestType> = registryFactory<requestType>();
-  const sent: registryType<requestType> = registryFactory<requestType>();
+  const pending = {} as Record<string,requestType>;
+  const sent = {} as Record<string,requestType>;
 
   function isActive(): boolean {
     return ws?.readyState === WebSocket.OPEN;
@@ -43,11 +44,11 @@ export function wsCtor(
 
   function processPending(): void {
     if (isActive()) {
-      pending.values.forEach(p => {
+      Object.values(pending).forEach(p => {
         ws?.send(p.data);
-        sent.register(p.id, p);
+        sent[p.id]=p;
+        delete pending[p.id];
       });
-      pending.clear();
     }
   }
 
@@ -56,7 +57,7 @@ export function wsCtor(
     const ss = i.s?.[0];
     if (i.id && i.n && ss === '?') {
       try {
-        const call = callRegistry?.lookup(i.n);
+        const call = callRegistry[i.n];
         if (call) {
           const r = await call(i.a);
           ws?.send(JSON.stringify({
@@ -78,7 +79,8 @@ export function wsCtor(
         }));
       }
     } else if (i.id && (ss === '-' || ss === '+')) {
-      const req = sent.remove(i.id);
+      const req = sent[i.id];
+      delete sent[i.id];
       if (req) {
         deps.window.clearTimeout(req.timeoutHandle);
         if (ss === '+') {
@@ -150,7 +152,9 @@ export function wsCtor(
   const defaultTimeout = Duration.fromObject({minute: 1});
 
   function timeoutRequest(id: string): void {
-    const req = pending.remove(id) || sent.remove(id);
+    const req = pending[id] ?? sent[id];
+    delete pending[id];
+    delete sent[id];
     req?.reject('TIMEOUT');
   }
 
@@ -158,7 +162,7 @@ export function wsCtor(
     return new Promise<serializableType>((resolve, reject) => {
       const id = tuidFactory();
       const data = JSON.stringify({id, n: callName, a: params, s: '?'});
-      pending.register(id, {
+      pending[id] = {
         id,
         resolve,
         reject,
@@ -166,14 +170,13 @@ export function wsCtor(
         timeoutHandle: deps.window.setTimeout(() => {
           timeoutRequest(id);
         }, timeout.as('milliseconds')),
-      });
+      };
 
       if (isActive()) {
         processPending();
       }
     });
   }
-
 
   function callCtor<TP extends serializableType, TR extends serializableType>(
     callName: string,

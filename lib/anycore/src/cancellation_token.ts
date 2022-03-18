@@ -1,4 +1,3 @@
-import {registryFactory} from "./registry";
 import {entitiesOrderedByKeyReversed} from "./entries_ordered_by_key";
 
 export type cancellationCallbackType = () => void;
@@ -13,19 +12,22 @@ export type cancellationTokenType = {
 export const cancellationTokenFactoryCtor = () => {
   let id = 1;
   return () => {
-    const cancellationCallbacks = registryFactory<cancellationCallbackType>();
+    let cancellationCallbacks = {} as Record<string, cancellationCallbackType>;
 
     let isCancellationRequested = false;
 
-    const onCancelRequested = (callback: cancellationCallbackType) =>
-      cancellationCallbacks.register((id++).toString(16).padStart(16,'0'), callback);
+    const onCancelRequested = (callback: cancellationCallbackType) => {
+      const x = (id++).toString(16).padStart(16, '0');
+      cancellationCallbacks[x] = callback;
+      return () => delete cancellationCallbacks[x];
+    }
 
     const requestCancellation = () => {
       if (!isCancellationRequested) {
-        entitiesOrderedByKeyReversed(cancellationCallbacks.entries)
+        entitiesOrderedByKeyReversed(Object.entries(cancellationCallbacks))
           .map(x => x[1])
           .forEach((cb) => cb());
-        cancellationCallbacks.clear();
+        cancellationCallbacks = {};
         isCancellationRequested = true;
       }
     };

@@ -1,11 +1,10 @@
 import assert from 'assert';
 import {pubSubCtorCtor} from './pub_sub';
-import {registryFactory} from './registry';
 import {tuidForTestingFactoryCtor} from "@nereid/nodecore";
 
 // testing bootstrap
 const tuidFactory = tuidForTestingFactoryCtor(0);
-const pubSubCtor = pubSubCtorCtor(tuidFactory, registryFactory);
+const pubSubCtor = pubSubCtorCtor(tuidFactory);
 
 describe('pubSub', () => {
   it('basics', async () => {

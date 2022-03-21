@@ -48,7 +48,7 @@ export const serverFactoryCtor = (createServer: createServerType, setInterval: s
     }
   };
 
-  const requestHandler = async (req: IncomingMessage, res: ServerResponse): Promise<void> => {
+  const requestHandler = async (req: IncomingMessage, res: ServerResponse) => {
     try {
       const ctx = ctxCtor(req, res, dbProvider, settings);
 

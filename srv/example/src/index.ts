@@ -6,7 +6,7 @@ import {helloHandler} from "./hello_handler";
 main(async () => {
   // todo read from env
   const appSettings: serverSettingsType = {
-    port: 8080,
+    port: 8800,
     host: '127.0.0.1',
     schema: 'http',
     appUrl: 'http://api.example.xxx',
@@ -22,7 +22,7 @@ main(async () => {
 
   // todo read from env
   const staffSettings: serverSettingsType = {
-    port: 8800,
+    port: 8801,
     host: '127.0.0.1',
     schema: 'http',
     appUrl: 'http://api.example.xxx',

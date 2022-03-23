@@ -5,5 +5,5 @@ module.exports = {
   ],
   "full-trace": true,
   bail: true,
-  spec: "src/**/*.test.cfg_ts",
+  spec: "src/**/*.test.ts",
 };

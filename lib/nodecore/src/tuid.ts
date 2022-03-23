@@ -16,7 +16,7 @@ export const tuidBase64urlToHex = (s: string) => Buffer.from(s, "base64url").toS
 export const tuidFactoryCtor = (
   randomFillSync: (buffer: Buffer, offset: number, count: number) => void,
   nowMs: () => number,
-  format: "hex" | "base64url" = "hex",
+  format: "hex" | "base64url" = "base64url",
 ) => {
   let lastTime = 0n;
   return () => {

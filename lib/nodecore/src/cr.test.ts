@@ -1,7 +1,7 @@
 import {crCtor} from './cr';
 import assert from 'assert';
-import {stuidForTestingFactoryCtor} from "dist";
 import {secureTokenFactoryCtor} from "./stoken";
+import {stuidForTestingFactoryCtor} from "./stuid";
 
 const testCrCtor = (nowMs = 0) => {
   const secureTokenFactory = secureTokenFactoryCtor("asdf", stuidForTestingFactoryCtor());

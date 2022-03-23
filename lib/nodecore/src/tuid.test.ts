@@ -20,8 +20,8 @@ describe("tuid", () => {
     const {tuidFactory, randomFillSyncStub, nowMsStub} = getSut();
 
     nowMsStub.returns(0x7770_7771_7772_777en);
-    assert.strictEqual("77717772777e00000000000000000000", tuidFactory());
-    assert.strictEqual("77717772777f00000000000000000000", tuidFactory());
+    assert.strictEqual("d3F3cnd-AAAAAAAAAAAAAA", tuidFactory());
+    assert.strictEqual("d3F3cnd_AAAAAAAAAAAAAA", tuidFactory());
 
     randomFillSyncStub.callsFake((buffer: Buffer, start: number, count: number) => {
       const end = start + count;
@@ -29,7 +29,7 @@ describe("tuid", () => {
         buffer[i] = 0xff;
       }
     });
-    assert.strictEqual("777177727780ffffffffffffffffffff", tuidFactory());
+    assert.strictEqual("d3F3cneA_____________w", tuidFactory());
   });
 
   it("works w/ b64u formatter", () => {

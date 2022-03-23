@@ -13,7 +13,7 @@ import {IncomingMessage, Server} from 'http';
 import WebSocket from 'ws';
 import {Socket} from 'net';
 import {ctxReqCtor} from './ctx';
-import {serializableType} from "@nereid/anycore";
+import {serializableType, serialize} from "@nereid/anycore";
 import {dbProviderType} from "./db/db_provider.type";
 import {sessionUpdate} from "./db/db_session";
 
@@ -23,10 +23,10 @@ export type wsType = {
 };
 
 export const wsInit = (
-  wsHandlerRegistry: Readonly<Record<string,wsHandlerType>>,
+  wsHandlerRegistry: Readonly<Record<string, wsHandlerType>>,
   server: Server,
   settings: serverSettingsType,
-  sessionInit: reqHandlerType,
+  sessionInit: reqHandlerType | undefined,
   dbProvider: dbProviderType,
   tuidFactory: () => string,
   wsOnConnectHandler?: (ctxWs: ctxWsType) => Promise<serializableType>,
@@ -38,7 +38,6 @@ export const wsInit = (
   });
 
   const heartbeat = (ctxWs: ctxWsType) => {
-    console.log('heartbeat', ctxWs.sessionId);
     ctxWs.ws.isAlive = true;
   };
 
@@ -51,7 +50,9 @@ export const wsInit = (
           const call = wsHandlerRegistry[i.n];
           if (call) {
             const r = await call(ctxWs, i.a);
-            await sessionUpdate(ctxWs);
+            if (ctxWs.settings.session?.enabled) {
+              await sessionUpdate(ctxWs);
+            }
             ctxWs.ws.send(JSON.stringify({
               id: i.id,
               s: '+',
@@ -94,10 +95,11 @@ export const wsInit = (
   };
 
   const ping = () => {
-    console.log('sending pings');
     wss.clients.forEach((ws: WebSocket) => {
       const wse = ws as webSocketExtendedType;
-      if (!wse.isAlive) return ws.terminate();
+      if (!wse.isAlive) {
+        return ws.terminate();
+      }
       wse.isAlive = false;
       ws.ping(noop);
     });
@@ -127,8 +129,8 @@ export const wsInit = (
   };
 
   wss.on('connection', async (ctxWs: ctxWsType) => {
-    if (ctxWs.ws.protocol !== 'rpc_v1') {
-      ctxWs.ws.send({supportedProtocols: ['rpc_v1']});
+    if (ctxWs.ws.protocol !== 'rpc1') {
+      ctxWs.ws.send(serialize({supportedProtocols: ['rpc1']}));
       ctxWs.ws.terminate();
       return;
     }
@@ -185,10 +187,12 @@ export const wsInit = (
 
     if (host) {
       const ctx = (req as IncomingMessageEx)._.ctx;
-      const sessionId = ctx.sessionId;
-      // SameSite=Lax is required for the redirect from GoogleAuth back to our server to send cookies in Chrome.
-      const header = `Set-Cookie: SessionId=${sessionId}; HttpOnly; Path=/; SameSite=None; Domain=${host}; Max-Age=3600${settings.schema === 'https' ? '; Secure' : ''}`;
-      headers.push(header);
+      if (ctx.settings.session?.enabled) {
+        const sessionId = ctx.sessionId;
+        // SameSite=Lax is required for the redirect from GoogleAuth back to our server to send cookies in Chrome.
+        const header = `Set-Cookie: SessionId=${sessionId}; HttpOnly; Path=/; SameSite=None; Domain=${host}; Max-Age=3600${settings.schema === 'https' ? '; Secure' : ''}`;
+        headers.push(header);
+      }
     }
   });
 
@@ -201,10 +205,13 @@ export const wsInit = (
         return;
       }
 
-      await sessionInit(ctx);
+      if (sessionInit) {
+        await sessionInit(ctx);
+      }
+
       const reqEx = req as IncomingMessageEx;
 
-      // this is a hack to get the ctx to the headers event where we need the sessionId
+      // this is a hack to get the ctx to the headers event where we need the session data
       reqEx._ = {ctx};
 
       wss.handleUpgrade(req, socket, head, ws => {
@@ -215,7 +222,7 @@ export const wsInit = (
           const ctxWs: ctxWsType = {
             ws: wsX,
             remoteAddress: ctx.remoteAddress,
-            sessionId: ctx.sessionId,
+            sessionId: ctx.sessionId || tuidFactory(), // ||, not ??, so we replate '' with a sessionId.
             session: ctx.session,
             user: ctx.user,
             dbProviderCtx: ctx.dbProviderCtx,

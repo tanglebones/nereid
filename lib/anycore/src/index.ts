@@ -2,6 +2,7 @@ export * from './cancellation_token';
 export * from './delay';
 export * from './entries_ordered_by_key';
 export * from './memoize';
+export * from './normalize_email';
 export * from './promise_state';
 export * from './pub_sub';
 export * from './pub_sub_play';

@@ -20,16 +20,24 @@ function readdirRecursiveSync(path, cb) {
 
 const hostPostfix = process.env.HOST_POSTFIX ?? 'xxx';
 
+const usedPorts = {};
+
 readdirRecursiveSync('../srv', (file) => {
 
-  const m = file.match(/srv\/(?<domain>[^/]+)\/.port$/);
+  const m = file.match(/srv\/(?<domain>[^/]+)\/port_mapping.json$/);
   if (m) {
     const contents = fs.readFileSync(file, "utf-8");
-    console.log(file, contents);
-    const port = +(contents.split(/[\n\r]/)?.[0]);
-    if (port) {
-      const {domain} = m.groups;
-      hostMappings.push(`    api.${domain}.${hostPostfix} ${port};`)
+    const mapping = JSON.parse(contents);
+    for (const [subdomain, port] of Object.entries(mapping)) {
+      if (port) {
+        const {domain} = m.groups;
+        const fqdn = `${subdomain}.${domain}.${hostPostfix}`;
+        if (usedPorts[port]) {
+          throw new Error(`Port conflict: ${port} requested by ${usedPorts[port]} and ${fqdn}`);
+        }
+        usedPorts[port] = fqdn;
+        hostMappings.push(`    ${fqdn} ${port};`)
+      }
     }
   }
 });
@@ -46,9 +54,9 @@ readdirRecursiveSync('../srv', (file) => {
 //   const cwdParts = cwd.trim().split('/');
 //   cwdParts.pop();
 //   cwd = cwdParts.join('/');
-  const hostMap = hostMappings.join('\n');
+const hostMap = hostMappings.join('\n');
 
-  const config = `
+const config = `
 worker_processes 1;
 error_log stderr;
 daemon off;
@@ -113,8 +121,8 @@ ${hostMap}
 }
 `;
 
-  console.log("writing ./nginx.conf");
-  fs.writeFileSync("./nginx.conf", config);
-  process.exit(0);
+console.log("writing ./nginx.conf");
+fs.writeFileSync("./nginx.conf", config);
+process.exit(0);
 
 // });

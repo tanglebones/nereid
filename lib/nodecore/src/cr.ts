@@ -1,6 +1,7 @@
 import {createHash, createHmac} from 'crypto';
 import bcrypt from 'bcryptjs';
-import {bufferXor, stuidEpochMilli} from '@nereid/nodecore';
+import {stuidEpochMilli} from "./stuid";
+import {bufferXor} from "./buffer_xor";
 
 export const crCtor = (
   secureToken: { create: () => string, verify: (stoken: string) => string | undefined },
@@ -147,3 +148,5 @@ export const crCtor = (
     clientResponse,
   };
 }
+
+export type crType = ReturnType<typeof crCtor>;

@@ -41,7 +41,7 @@ export const sessionSetCtor = (
 
     if (ctx.host) {
       const cookieName = ctx.settings.session?.cookieName ?? 'SessionId';
-      const maxAge = ctx.settings.session?.expiry ?? 3600;
+      const maxAge = ctx.settings.session?.expirySeconds ?? 3600;
       // SameSite=Lax is required for the redirect from GoogleAuth back to our server to send cookies in Chrome.
       // it is also now required for localhost dev to work cause chrome is shite.
       // And installing SSL certs for localhost as a work around is STUPID. Especially since SSL termination is done at the LB!

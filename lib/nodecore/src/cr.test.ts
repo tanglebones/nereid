@@ -1,6 +1,6 @@
 import {crCtor} from './cr';
 import assert from 'assert';
-import {stuidForTestingFactoryCtor} from "@nereid/nodecore";
+import {stuidForTestingFactoryCtor} from "dist";
 import {secureTokenFactoryCtor} from "./stoken";
 
 const testCrCtor = (nowMs = 0) => {

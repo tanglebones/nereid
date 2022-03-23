@@ -89,11 +89,12 @@ git config --global core.eol lf
   * click ok
   * in a shell do `ping whatever.xxx` - it should now resolve to 127.0.0.1
 
-## Running nereid locally
+## Running nereid locally (on Windows)
 
 * Create a shell to run nginx
-* `cd nginx; npm run run`
-* Note: when you `^C` to stop nginx it doesn't actually stop and you need to manually kill it via the task manager. I'll look at replacing it with a custom built local LB that works better someday.
+  * `cd nginx; ./run.sh`
+* Note: when you `^C` to stop nginx it might not actually stop.
+  * this will stop all running nginx.exe tasks: `tasklist //v | grep nginx.exe | tr -s ' ' | cut -d ' ' -f 2 | xargs -n 1 taskkill //f //pid`
 * Load up WebStorm, point it at the root of the project.
 * Right-click on the `srv/exampls/package.json` and view the npm scripts.
 * Select `dev` to run it in dev mode.

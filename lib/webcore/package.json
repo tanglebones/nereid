@@ -8,6 +8,7 @@
   "scripts": {
     "build": "tsc",
     "test": "mocha",
+    "clean": "rm -rf dist/* && rm tsconfig.tsbuildinfo",
     "cover": "nyc mocha",
     "lint": "eslint src --ext .js,.jsx,.ts,.tsx",
     "doc": "npx typedoc src/*.ts src/**/*.ts --out dist/doc"

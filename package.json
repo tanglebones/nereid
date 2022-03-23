@@ -27,12 +27,17 @@
     "@types/xxhashjs": "^0.2.2",
     "@typescript-eslint/eslint-plugin": "^5.10.2",
     "@typescript-eslint/parser": "^5.10.2",
+    "buffer": "^6.0.3",
+    "crypto-browserify": "^3.12.0",
     "eslint": "^8.8.0",
+    "events": "^3.3.0",
     "mocha": "^9.2.0",
     "nyc": "^15.1.0",
     "parcel": "^2.3.2",
+    "process": "^0.11.10",
     "sinon": "^13.0.0",
     "source-map-support": "^0.5.21",
+    "stream-browserify": "^3.0.0",
     "ts-node": "^10.4.0",
     "typedoc": "^0.22.11",
     "typescript": "^4.5.5"
@@ -48,7 +53,6 @@
     "pg-promise": "^10.11.1",
     "react": "^17.0.2",
     "react-dom": "^17.0.2",
-    "ts-toolbelt": "^9.6.0",
     "ws": "^8.5.0",
     "xxhashjs": "^0.2.2"
   }

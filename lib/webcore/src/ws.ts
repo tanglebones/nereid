@@ -1,8 +1,6 @@
 import {serializableType} from '@nereid/anycore';
 import {DateTime, Duration} from 'luxon';
-import {tuidFactory} from "./tuid_factory";
 
-export const deps = {window};
 export type wsHandlerType = (params: serializableType) => Promise<serializableType>;
 
 export type wsType = {
@@ -22,36 +20,38 @@ type requestType = {
   timeoutHandle: number,
 };
 
-export function wsCtor(
+export let wsCtor = (
+  tuidFactory: () => string,
+  setTimeout: (cb: () => void, delayMs: number) => number,
+  clearTimeout: (handle: number) => void
+) => (
   domain: string,
   callRegistry: Readonly<Record<string, wsHandlerType>>,
   onConnectHandler?: () => void,
   onCloseHandler?: () => void,
-): wsType {
+): wsType => {
   const schema = window.location.protocol === 'http:' ? 'ws:' : 'wss:';
   const wsUrl = `${schema}//${domain}/ws`;
   let ws: WebSocket | undefined;
 
   let lastConnectionAttemptAt = DateTime.utc().minus({minutes: 2});
 
-  const pending = {} as Record<string,requestType>;
-  const sent = {} as Record<string,requestType>;
+  const pending = {} as Record<string, requestType>;
+  const sent = {} as Record<string, requestType>;
 
-  function isActive(): boolean {
-    return ws?.readyState === WebSocket.OPEN;
-  }
+  const isActive = () => ws?.readyState === WebSocket.OPEN;
 
-  function processPending(): void {
+  const processPending = () => {
     if (isActive()) {
       Object.values(pending).forEach(p => {
         ws?.send(p.data);
-        sent[p.id]=p;
+        sent[p.id] = p;
         delete pending[p.id];
       });
     }
-  }
+  };
 
-  async function processMessage(data: string): Promise<void> {
+  const processMessage = async (data: string) => {
     const i: { id?: string; n?: string; a?: serializableType, s?: string, e?: serializableType, r?: serializableType } = JSON.parse(data);
     const ss = i.s?.[0];
     if (i.id && i.n && ss === '?') {
@@ -81,7 +81,7 @@ export function wsCtor(
       const req = sent[i.id];
       delete sent[i.id];
       if (req) {
-        deps.window.clearTimeout(req.timeoutHandle);
+        clearTimeout(req.timeoutHandle);
         if (ss === '+') {
           req.resolve(i.r);
         } else {
@@ -93,11 +93,11 @@ export function wsCtor(
         }
       }
     }
-  }
+  };
 
   let timeoutHandle: number | undefined;
 
-  function reconnect(): void {
+  const reconnect = () => {
     if (timeoutHandle || isActive()) {
       return;
     }
@@ -106,7 +106,7 @@ export function wsCtor(
     const timeSinceLastConnectionAttemptAt = utc.diff(lastConnectionAttemptAt);
     if (timeSinceLastConnectionAttemptAt < Duration.fromObject({seconds: 30})) {
       const delay = timeSinceLastConnectionAttemptAt.as('milliseconds');
-      timeoutHandle = deps.window.setTimeout(() => {
+      timeoutHandle = setTimeout(() => {
         timeoutHandle = undefined;
         reconnect();
       }, delay);
@@ -117,7 +117,7 @@ export function wsCtor(
 
     console.log('reconnecting. ws.readyState is', ws?.readyState);
     try {
-      ws = new WebSocket(wsUrl, ['rpc_v1']);
+      ws = new WebSocket(wsUrl, ['rpc1']);
     } catch (e) {
       console.error(e);
       reconnect();
@@ -144,43 +144,41 @@ export function wsCtor(
       console.error(ev);
       ws?.close();
     };
-  }
+  };
 
   reconnect();
 
   const defaultTimeout = Duration.fromObject({minute: 1});
 
-  function timeoutRequest(id: string): void {
+  const timeoutRequest = (id: string) => {
     const req = pending[id] ?? sent[id];
     delete pending[id];
     delete sent[id];
     req?.reject('TIMEOUT');
-  }
+  };
 
-  async function call(callName: string, params: serializableType, timeout: Duration = defaultTimeout): Promise<serializableType> {
-    return new Promise<serializableType>((resolve, reject) => {
-      const id = tuidFactory();
-      const data = JSON.stringify({id, n: callName, a: params, s: '?'});
-      pending[id] = {
-        id,
-        resolve,
-        reject,
-        data,
-        timeoutHandle: deps.window.setTimeout(() => {
-          timeoutRequest(id);
-        }, timeout.as('milliseconds')),
-      };
+  const call = async (callName: string, params: serializableType, timeout: Duration = defaultTimeout) => new Promise<serializableType>((resolve, reject) => {
+    const id = tuidFactory();
+    const data = JSON.stringify({id, n: callName, a: params, s: '?'});
+    pending[id] = {
+      id,
+      resolve,
+      reject,
+      data,
+      timeoutHandle: setTimeout(() => {
+        timeoutRequest(id);
+      }, timeout.as('milliseconds')),
+    };
 
-      if (isActive()) {
-        processPending();
-      }
-    });
-  }
+    if (isActive()) {
+      processPending();
+    }
+  });
 
-  function callCtor<TP extends serializableType, TR extends serializableType>(
+  const callCtor = <TP extends serializableType, TR extends serializableType>(
     callName: string,
     defaultReturn?: Partial<TR & { error: string }>,
-  ): (params: TP) => Promise<Partial<TR & { error: string }>> {
+  ): (params: TP) => Promise<Partial<TR & { error: string }>> => {
     const def = defaultReturn || {error: 'NO_REPLY'} as Partial<TR & { error: string }>;
 
     return async function (params: TP): Promise<Partial<TR & { error: string }>> {
@@ -196,7 +194,7 @@ export function wsCtor(
         return def;
       }
     };
-  }
+  };
 
   return {call, callCtor, isActive};
-}
+};

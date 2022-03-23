@@ -4,6 +4,7 @@
   "description": "",
   "source": "src/index.html",
   "scripts": {
+    "clean": "rm -rf dist/*",
     "build": "parcel build src/index.html"
   },
   "author": "",

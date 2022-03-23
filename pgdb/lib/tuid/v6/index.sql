@@ -67,7 +67,7 @@ select
     when tuid is null
       then null
     else
-      replace(translate(encode(decode(replace(tuid::text, '-', ''), 'hex'), 'base64'), '/+', '-_'), '=', '')
+      replace(translate(encode(decode(replace(tuid::text, '-', ''), 'hex'), 'base64'), '/+', '_-'), '=', '')
     end;
 $$;
 
@@ -81,7 +81,7 @@ select
     when compact is null
       then null
     else
-      encode(decode(rpad(translate(compact, '-_', '/+'), 24, '='), 'base64'), 'hex')::uuid
+      encode(decode(rpad(translate(compact, '_-', '/+'), 24, '='), 'base64'), 'hex')::uuid
     end;
 $$;
 
@@ -95,7 +95,7 @@ select
     when stuid is null
       then null
     else
-      replace(translate(encode(stuid, 'base64'), '/+', '-_'), '=', '')
+      replace(translate(encode(stuid, 'base64'), '/+', '_-'), '=', '')
     end;
 $$;
 
@@ -109,7 +109,7 @@ select
     when compact is null
       then null
     else
-      decode(rpad(translate(compact, '-_', '/+'), 44, '='), 'base64')
+      decode(rpad(translate(compact, '_-', '/+'), 44, '='), 'base64')
     end;
 $$;
 

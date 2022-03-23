@@ -5,8 +5,12 @@ import {clearInterval} from "timers";
 import {cancellationTokenFactoryCtor} from "@nereid/anycore";
 import {dbProviderCtor} from "@nereid/nodesrv/dist/db/db_provider";
 import {exitCtor} from "@nereid/nodesrv/dist/exit";
+import {tuidFactoryCtor} from "@nereid/nodecore";
+import {randomFillSync} from "crypto";
 
 const nowMs = () => +new Date();
+const tuidFactory = tuidFactoryCtor(randomFillSync, nowMs, "base64url");
+
 const cancellationTokenFactory = cancellationTokenFactoryCtor();
 
 eventLoopHealthMonitorCtor(
@@ -29,6 +33,6 @@ if (!staffConnectionString) {
 }
 export const exit = exitCtor(process, cancellationTokenFactory);
 export const appDbProvider = dbProviderCtor({connectionString: appConnectionString, application_name: 'ep_app'});
-export const staffDbProvider = dbProviderCtor({connectionString: staffConnectionString, application_name: 'ep_staff'});
-export const serverFactory = serverFactoryCtor(createServer, setInterval);
+// export const staffDbProvider = dbProviderCtor({connectionString: staffConnectionString, application_name: 'ep_staff'});
+export const serverFactory = serverFactoryCtor(createServer, setInterval, tuidFactory);
 

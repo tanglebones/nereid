@@ -13,10 +13,10 @@ export const cancellationTokenFactoryCtor = () => {
   let id = 1;
   return () => {
     let cancellationCallbacks = {} as Record<string, cancellationCallbackType>;
-
     let isCancellationRequested = false;
 
     const onCancelRequested = (callback: cancellationCallbackType) => {
+      console.assert(callback);
       const x = (id++).toString(16).padStart(16, '0');
       cancellationCallbacks[x] = callback;
       return () => delete cancellationCallbacks[x];

@@ -82,7 +82,7 @@ export type serverSettingsType = {
   appUrl: string,
   session?: {
     enabled: boolean,
-    expiry?: number,
+    expirySeconds?: number,
     expiryIntervalMs?: number,
     cookieName?: string,
   }

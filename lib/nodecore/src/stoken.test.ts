@@ -1,6 +1,6 @@
 import {secureTokenFactoryCtor} from './stoken';
 import assert from 'assert';
-import {stuidForTestingFactoryCtor, stuidZeroHex} from "@nereid/nodecore";
+import {stuidForTestingFactoryCtor, stuidZeroHex} from "./stuid";
 
 describe('stoken', () => {
   const secureTokenFactory = secureTokenFactoryCtor("aoeu", stuidForTestingFactoryCtor());

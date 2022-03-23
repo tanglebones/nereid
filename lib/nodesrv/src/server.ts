@@ -2,12 +2,21 @@
 // -- wrapper around node's createServer call
 // -- can probably have some of the logic lifted out and tested...
 
-import {contentHandlerType, ctxType, serverSettingsType} from "./server.type";
+import {
+  contentHandlerType,
+  ctxType, ctxWsType,
+  reqHandlerType,
+  serverSettingsType,
+  wsHandlerType
+} from "./server.type";
+
 import {Server, IncomingMessage, ServerResponse} from "http";
 import {sessionInfoCtor, sessionInitCtor, sessionSetCtor} from "./session";
 import {ctxCtor} from "./ctx";
 import {sessionExpire, sessionUpdate} from "./db/db_session";
 import {dbProviderType} from "./db/db_provider.type";
+import {wsInit, wsType} from "./ws";
+import {serializableType} from "@nereid/anycore";
 
 const handleNotFound = (res: ServerResponse) => {
   res.statusCode = 404;
@@ -24,15 +33,20 @@ const handleServerError = (res: ServerResponse, e: Error) => {
 type createServerType = (handler: (req: IncomingMessage, res: ServerResponse) => Promise<void>) => Server;
 type setIntervalType = <T>(callback: () => void, ms: number) => T;
 
-export const serverFactoryCtor = (createServer: createServerType, setInterval: setIntervalType) => (
+export const serverFactoryCtor = (createServer: createServerType, setInterval: setIntervalType, tuidFactory: () => string) => (
   dbProvider: dbProviderType,
   settings: serverSettingsType,
   handlerArray: contentHandlerType[],
+  wsHandlerRegistry?: Readonly<Record<string, wsHandlerType>>,
+  wsOnConnectHandler?: (ctxWs: ctxWsType) => Promise<serializableType>,
+  wsOnCloseHandler?: (ctxWs: ctxWsType) => Promise<serializableType>,
 ) => {
   const ha: contentHandlerType[] = [...handlerArray];
 
+  let sessionInit: reqHandlerType | undefined = undefined;
+
   if (settings.session?.enabled) {
-    const sessionInit = sessionInitCtor(settings);
+    sessionInit = sessionInitCtor(settings);
     const sessionSet = sessionSetCtor(settings);
     const sessionInfo = sessionInfoCtor(settings);
 
@@ -84,5 +98,21 @@ export const serverFactoryCtor = (createServer: createServerType, setInterval: s
 
   server.listen(+settings.port, settings.host);
 
-  return {server};
+
+  let ws: wsType | undefined = undefined;
+
+  if (wsHandlerRegistry) {
+    ws = wsInit(
+      wsHandlerRegistry,
+      server,
+      settings,
+      sessionInit,
+      dbProvider,
+      tuidFactory,
+      wsOnConnectHandler,
+      wsOnCloseHandler
+    );
+  }
+
+  return {server, ws};
 };

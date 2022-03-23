@@ -21,6 +21,6 @@
     "inlineSources": true,
     "removeComments": false,
     "allowSyntheticDefaultImports": true,
-    "lib": [ "es2020" ]
+    "lib": [ "es2021" ]
   }
 }

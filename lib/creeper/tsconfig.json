@@ -11,19 +11,5 @@
     "dist",
     "build",
     "node_modules"
-  ],
-  "references": [
-    {
-      "path": "../../lib/nodesrv"
-    },
-    {
-      "path": "../../lib/nodecore"
-    },
-    {
-      "path": "../../lib/anycore"
-    },
-    {
-      "path": "../../lib/creeper"
-    }
   ]
 }

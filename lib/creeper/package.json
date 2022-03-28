@@ -1,5 +1,5 @@
 {
-  "name": "@nereid/anycore",
+  "name": "@nereid/creeper",
   "private": true,
   "version": "0.1.0",
   "main": "./dist/index.js",
@@ -12,5 +12,8 @@
     "cover": "nyc mocha",
     "lint": "eslint src --ext .js,.jsx,.ts,.tsx",
     "doc": "npx typedoc src/*.ts src/**/*.ts --out dist/doc"
+  },
+  "dependencies": {
+    "@nereid/anycore": "*"
   }
 }

@@ -1,6 +1,7 @@
 import {Draft, Immutable, produce} from 'immer';
-import {deserialize, serializableType, serialize} from './serialize';
+import {serializableType, serialize} from './serialize';
 import {signature, signatureObjectKeys} from "./signature";
+import {RecursivePartial} from "./recursive_partial.type";
 
 type immutableSerializableType = Immutable<serializableType>;
 export type stateModifierFunctionType = (eventParams: serializableType, state: Draft<serializableType>) => void;
@@ -20,8 +21,8 @@ export type eventPacketType = {
 };
 
 export type starRepositoryServerType = {
-  mergeCommit: (commitMessageFromClient: string) => Promise<string | undefined>;
-  readonly state: immutableSerializableType;
+  mergeCommit: (commitMessageFromClient: serializableType) => Promise<serializableType>;
+  readonly state: serializableType;
   readonly stateSignature: string;
 };
 
@@ -40,9 +41,9 @@ export const starRepositoryServerFactory = (
 
   computeStateSignature();
 
-  const mergeCommit = async (commitMessageFromClient: string) => {
+  const mergeCommit = async (commitMessageFromClient: serializableType) => {
     try {
-      const eventPacket = deserialize<eventPacketType>(commitMessageFromClient);
+      const eventPacket = commitMessageFromClient as RecursivePartial<eventPacketType>;
       if (eventPacket.eventRegistrySignature !== eventRegistrySignature) {
         onError('ON_REMOTE_EVENT_REGISTRY_SIGNATURE_MISMATCH', {
             remoteSignature: eventPacket.eventRegistrySignature,
@@ -74,7 +75,7 @@ export const starRepositoryServerFactory = (
       computeStateSignature();
       eventPacket.postMergeSignature = stateSignature;
 
-      return serialize(eventPacket);
+      return eventPacket;
     } catch (exception) {
       onError('ON_REMOTE_EXCEPTION', {exception});
     }
@@ -83,7 +84,7 @@ export const starRepositoryServerFactory = (
   return {
     mergeCommit,
     get state() {
-      return state;
+      return state as serializableType;
     },
     get stateSignature() {
       return stateSignature;
@@ -92,12 +93,12 @@ export const starRepositoryServerFactory = (
 };
 
 export type starRepositoryCloneType = {
-  commit: (name: string, params: serializableType) => Promise<string | undefined>;
-  onRebase: (mergeMessageFromServer: string) => Promise<void>;
+  commit: (name: string, params: serializableType) => Promise<serializableType>;
+  onRebase: (mergeMessageFromServer: serializableType) => Promise<void>;
   readonly clientId: string;
   readonly pendingCount: number;
   readonly state: immutableSerializableType;
-  readonly serverState: immutableSerializableType;
+  serverState: immutableSerializableType;
   readonly serverStateSignature: string;
 };
 
@@ -119,7 +120,7 @@ export const starRepositoryCloneFactoryCtor = (tuidFactory: () => string) => (
 
   computeServerStateSignature();
 
-  const commit = async (name: string, params: serializableType) => {
+  const commit = async (name: string, params: serializableType): Promise<serializableType> => {
     const stateModifier = eventRegistry[name];
 
     if (!stateModifier) {
@@ -134,19 +135,17 @@ export const starRepositoryCloneFactoryCtor = (tuidFactory: () => string) => (
 
     state = produce(state, x => stateModifier(event.params, x));
 
-    const packet: eventPacketType = {
+    return {
       event,
       clientId,
       eventId,
       eventRegistrySignature
-    };
-
-    return serialize(packet); // commitMessage to send to server
+    }; // commitMessage to send to server
   };
 
-  const onRebase = async (mergeMessageFromServer: string) => {
+  const onRebase = async (mergeMessageFromServer: serializableType) => {
     try {
-      const eventPacket = deserialize<eventPacketType>(mergeMessageFromServer);
+      const eventPacket = mergeMessageFromServer as RecursivePartial<eventPacketType>;
       if (eventPacket.eventRegistrySignature !== eventRegistrySignature) {
         onError('ON_REMOTE_EVENT_REGISTRY_SIGNATURE_MISMATCH', {
             remoteSignature: eventPacket.eventRegistrySignature,
@@ -219,10 +218,14 @@ export const starRepositoryCloneFactoryCtor = (tuidFactory: () => string) => (
     commit,
     onRebase,
     get state() {
-      return state;
+      return state as serializableType;
     },
     get serverState() {
-      return serverState;
+      return serverState as serializableType;
+    },
+    set serverState(newState: serializableType){
+      serverState = produce(newState, x=>x);
+      computeServerStateSignature();
     },
     get serverStateSignature() {
       return serverStateSignature;
@@ -235,3 +238,5 @@ export const starRepositoryCloneFactoryCtor = (tuidFactory: () => string) => (
     },
   };
 };
+
+export type starRepositoryCloneFactoryType = ReturnType<typeof starRepositoryCloneFactoryCtor>;

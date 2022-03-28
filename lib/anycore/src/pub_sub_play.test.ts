@@ -1,9 +1,10 @@
 import assert from 'assert';
 import {pubSubPlayCtorCtor} from './pub_sub_play';
-import {tuidForTestingFactoryCtor} from "@nereid/nodecore";
+
 
 // testing bootstrap
-const tuidFactory = tuidForTestingFactoryCtor(0);
+let tuidId = 0;
+const tuidFactory = () => (++tuidId).toString(16).padStart(32, '0');
 const pubSubPlayCtor = pubSubPlayCtorCtor(tuidFactory);
 
 describe('pubSubPlay', () => {

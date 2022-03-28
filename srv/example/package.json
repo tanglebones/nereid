@@ -19,6 +19,7 @@
   "dependencies": {
     "@nereid/nodecore": "*",
     "@nereid/nodesrv": "*",
-    "@nereid/anycore": "*"
+    "@nereid/anycore": "*",
+    "@nereid/creeper": "*"
   }
 }

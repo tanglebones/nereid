@@ -42,14 +42,14 @@ export type webSocketExtendedType =
 
 export type requestType = {
   id: string,
-  ctxWs: ctxWsType,
+  ctxWs: ctxWebSocketType,
   resolve: (r: serializableType) => void,
   reject: (r: serializableType) => void,
   data: string,
   sent: boolean,
 };
 
-export type ctxWsType = ctxBaseType & {
+export type ctxWebSocketType = ctxBaseType & {
   ws: webSocketExtendedType,
   call(name: string, params: serializableType): Promise<serializableType>,
   requests: Record<string, requestType>,
@@ -89,4 +89,4 @@ export type serverSettingsType = {
   [key: string]: serializableType,
 };
 
-export type wsHandlerType = (ctxWs: ctxWsType, callParams: serializableType | undefined) => Promise<serializableType | undefined>;
+export type webSocketHandlerType = (ctxWs: ctxWebSocketType, callParams: serializableType | undefined) => Promise<serializableType | undefined>;

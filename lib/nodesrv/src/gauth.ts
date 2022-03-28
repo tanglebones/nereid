@@ -1,5 +1,5 @@
 import {ctxBaseType, ctxType, gauthUserInfoType} from './server.type';
-import {secureTokenFactoryType} from "../../nodecore/src/stoken";
+import {secureTokenFactoryType} from "@nereid/nodecore";
 import {resolvedVoid} from "@nereid/anycore";
 import {toUrlParam} from "@nereid/anycore/dist/to_url_param";
 import {kvpArrayToObject} from "@nereid/anycore/dist/kvp_array_to_object";

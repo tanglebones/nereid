@@ -66,7 +66,7 @@ git config --global core.eol lf
 
 * `git clone` the repo
 * `npm install` at the workspace root
-* `npm run build_libs` as the error you get for an un-build workspace dependency is not clear.
+* `npm run build` as the error you get for an un-build workspace dependency is not clear.
 * NOTE: Any time you change code in a workspace dependency you need to re-built it or the code used will be out of date. 
 * postgres: https://www.postgresql.org/download/
   * testing with v14
@@ -98,3 +98,50 @@ git config --global core.eol lf
 * Load up WebStorm, point it at the root of the project.
 * Right-click on the `srv/exampls/package.json` and view the npm scripts.
 * Select `dev` to run it in dev mode.
+
+# Notes on setting up WSL2 on Win10
+
+You may prefer to use a WLS2 instance instead of git-sdk. You have to place the files on your windows system and not
+use the `\\wsl$\` share as that will not expose the symlinks used by workspaces.
+
+If you are using Acrylic DNS edit the config and set:
+```
+LocalIPv4BindingAddress=127.0.0.1
+```
+
+In "Turn Windows Features On & Off" enable **Windows Subsysytem for Linux** and the **Virtual Machine Platform**.
+
+Reboot.
+
+run as Administrator
+
+```
+wsl --update
+wsl --set-default-version 2
+```
+
+Then install [Alpine](https://www.microsoft.com/en-gb/p/alpine-wsl/9p804crf0395) linux.
+You need to open it via the store to actually complete the install.
+You may need to disable Acrylic DNS for the install to work, you can re-enable it afterwards.
+
+
+Use
+
+```
+wsl --list --verbose
+```
+
+To confirm the wsl version.
+
+If you've installed under version 1 use this to update it:
+
+```
+wsl --set-version <distro name> 2
+```
+
+Configure:
+
+```
+apk add zsh bash tmux
+# todo
+```

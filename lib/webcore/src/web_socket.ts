@@ -1,9 +1,9 @@
 import {serializableType} from '@nereid/anycore';
 import {DateTime, Duration} from 'luxon';
 
-export type wsHandlerType = (params: serializableType) => Promise<serializableType>;
+export type webSocketHandlerType = (params: serializableType) => Promise<serializableType>;
 
-export type wsType = {
+export type webSocketType = {
   call(callName: string, params: serializableType): Promise<serializableType>;
   isActive(): boolean;
   callCtor<TP extends serializableType, TR extends serializableType>(
@@ -20,16 +20,16 @@ type requestType = {
   timeoutHandle: number,
 };
 
-export let wsCtor = (
+export let webSocketCtor = (
   tuidFactory: () => string,
   setTimeout: (cb: () => void, delayMs: number) => number,
   clearTimeout: (handle: number) => void
 ) => (
   domain: string,
-  callRegistry: Readonly<Record<string, wsHandlerType>>,
+  callRegistry: Readonly<Record<string, webSocketHandlerType>>,
   onConnectHandler?: () => void,
   onCloseHandler?: () => void,
-): wsType => {
+): webSocketType => {
   const schema = window.location.protocol === 'http:' ? 'ws:' : 'wss:';
   const wsUrl = `${schema}//${domain}/ws`;
   let ws: WebSocket | undefined;
@@ -52,41 +52,48 @@ export let wsCtor = (
   };
 
   const processMessage = async (data: string) => {
-    const i: { id?: string; n?: string; a?: serializableType, s?: string, e?: serializableType, r?: serializableType } = JSON.parse(data);
-    const ss = i.s?.[0];
-    if (i.id && i.n && ss === '?') {
+    const packet: {
+      id?: string;
+      n?: string; // name
+      a?: serializableType, // args
+      s?: string, // status
+      e?: serializableType, // error
+      r?: serializableType // result
+    } = JSON.parse(data);
+    const status = packet.s?.[0];
+    if (packet.id && packet.n && status === '?') {
       try {
-        const call = callRegistry[i.n];
+        const call = callRegistry[packet.n];
         if (call) {
-          const r = await call(i.a);
+          const r = await call(packet.a);
           ws?.send(JSON.stringify({
-            id: i.id,
+            id: packet.id,
             s: '+',
             r,
           }));
         } else {
           ws?.send(JSON.stringify({
-            id: i.id,
+            id: packet.id,
             s: '-NF',
           }));
         }
       } catch (e) {
         ws?.send(JSON.stringify({
-          id: i.id,
+          id: packet.id,
           s: '-EX',
           e,
         }));
       }
-    } else if (i.id && (ss === '-' || ss === '+')) {
-      const req = sent[i.id];
-      delete sent[i.id];
+    } else if (packet.id && (status === '-' || status === '+')) {
+      const req = sent[packet.id];
+      delete sent[packet.id];
       if (req) {
         clearTimeout(req.timeoutHandle);
-        if (ss === '+') {
-          req.resolve(i.r);
+        if (status === '+') {
+          req.resolve(packet.r);
         } else {
-          if (i.s === '-EX') {
-            req.reject(i.e);
+          if (packet.s === '-EX') {
+            req.reject(packet.e);
           } else {
             req.reject('NOT_FOUND');
           }

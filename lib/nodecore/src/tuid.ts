@@ -36,14 +36,14 @@ export const tuidEpochMilli = (tuid: string, format: "hex" | "base64url" | undef
   const buffer = Buffer.alloc(18);
   buffer[0] = 0;
   buffer[1] = 0;
-  buffer.write(tuid, 2, format ?? "hex");
+  buffer.write(tuid, 2, format ?? "base64url");
   const n = buffer.readBigInt64BE(0);
   return Number(n);
 };
 
 export const tuidForTestingFactoryCtor = (start = 0, format: "hex" | "base64url" | undefined = undefined) => {
   let n = BigInt(start);
-  const fmt = format ?? "hex";
+  const fmt = format ?? "base64url";
   return () => {
     const buffer = Buffer.alloc(18);
     buffer.writeBigInt64BE(n, 0);

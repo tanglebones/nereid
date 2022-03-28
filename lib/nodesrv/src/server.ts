@@ -4,10 +4,10 @@
 
 import {
   contentHandlerType,
-  ctxType, ctxWsType,
+  ctxType, ctxWebSocketType,
   reqHandlerType,
   serverSettingsType,
-  wsHandlerType
+  webSocketHandlerType
 } from "./server.type";
 
 import {Server, IncomingMessage, ServerResponse} from "http";
@@ -15,7 +15,7 @@ import {sessionInfoCtor, sessionInitCtor, sessionSetCtor} from "./session";
 import {ctxCtor} from "./ctx";
 import {sessionExpire, sessionUpdate} from "./db/db_session";
 import {dbProviderType} from "./db/db_provider.type";
-import {wsInit, wsType} from "./ws";
+import {webSocketInit, webSocketType} from "./web_socket";
 import {serializableType} from "@nereid/anycore";
 
 const handleNotFound = (res: ServerResponse) => {
@@ -37,9 +37,9 @@ export const serverFactoryCtor = (createServer: createServerType, setInterval: s
   dbProvider: dbProviderType,
   settings: serverSettingsType,
   handlerArray: contentHandlerType[],
-  wsHandlerRegistry?: Readonly<Record<string, wsHandlerType>>,
-  wsOnConnectHandler?: (ctxWs: ctxWsType) => Promise<serializableType>,
-  wsOnCloseHandler?: (ctxWs: ctxWsType) => Promise<serializableType>,
+  wsHandlerRegistry?: Readonly<Record<string, webSocketHandlerType>>,
+  wsOnConnectHandler?: (ctxWs: ctxWebSocketType) => Promise<serializableType>,
+  wsOnCloseHandler?: (ctxWs: ctxWebSocketType) => Promise<serializableType>,
 ) => {
   const ha: contentHandlerType[] = [...handlerArray];
 
@@ -99,10 +99,10 @@ export const serverFactoryCtor = (createServer: createServerType, setInterval: s
   server.listen(+settings.port, settings.host);
 
 
-  let ws: wsType | undefined = undefined;
+  let ws: webSocketType | undefined = undefined;
 
   if (wsHandlerRegistry) {
-    ws = wsInit(
+    ws = webSocketInit(
       wsHandlerRegistry,
       server,
       settings,

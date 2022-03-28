@@ -2,8 +2,9 @@ import assert from 'assert';
 import {starRepositoryCloneFactoryCtor, starRepositoryServerFactory, stateModifierFunctionType} from './star_repo';
 import {serializableType} from './serialize';
 import {Draft} from 'immer';
-import {tuidForTestingFactoryCtor} from "@nereid/nodecore";
 
+let tuidId = 0;
+const tuidFactory = () => (++tuidId).toString(16).padStart(32, '0');
 
 describe('starRepo', () => {
   const append = (eventParams: serializableType, state: Draft<Record<string, serializableType>>) => {
@@ -19,7 +20,6 @@ describe('starRepo', () => {
   };
 
   it('multi-client example', async () => {
-    const tuidFactory = tuidForTestingFactoryCtor(1024, "base64url");
     const eventRegistry = {append, remove} as Readonly<Record<string, stateModifierFunctionType>>;
     const errors: { error: string, details: Record<string, unknown> }[] = [];
 

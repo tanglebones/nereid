@@ -68,6 +68,8 @@ export const ctxHost = (ctx: ctxType): void => {
   if (ctx.host) {
     return;
   }
-  const m = ctx.req.headers.host?.match(/([^.]+\.)*(?<tld>[^.:]+\.[^.:]+)(:\d+)?$/);
+  // match not a ., a ., then not a . or :, then optionally a :port.
+  // this gives the domain without any subdomains or ports.
+  const m = ctx.req.headers.host?.match(/(?<tld>[^.]+\.[^.:]+)(:\d+)?$/);
   ctx.host = m?.groups?.tld;
 };

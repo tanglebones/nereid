@@ -12,5 +12,8 @@
     "cover": "nyc mocha",
     "lint": "eslint src --ext .js,.jsx,.ts,.tsx",
     "doc": "npx typedoc src/*.ts src/**/*.ts --out dist/doc"
+  },
+  "dependencies": {
+    "@nereid/anycore": "*"
   }
 }

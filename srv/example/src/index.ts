@@ -2,7 +2,7 @@ import {contentHandlerType, serverSettingsType} from "@nereid/nodesrv";
 import {appDbProvider, exit, serverFactory} from "./bootstrap";
 import {main} from "@nereid/nodemain";
 import {helloHandler} from "./hello_handler";
-import {wsHandlerRegistry, wsOnCloseHandler, wsOnConnectHandler} from "./ws";
+import {wsHandlerRegistry, wsOnCloseHandler, wsOnConnectHandler} from "./web_socket";
 
 const portMapping = require("../port_mapping.json");
 

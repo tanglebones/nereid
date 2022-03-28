@@ -1,7 +1,7 @@
 import React from 'react';
 import {render} from 'react-dom';
 import {Counter} from "@nereid/webreactexample";
-import {ws} from "./ws";
+import {creeper, webSocket} from "./bootstrap";
 
 const Application = () => (
   <div>
@@ -13,7 +13,9 @@ const Application = () => (
 console.log("here");
 
 (async () => {
-  console.log(await ws.call('echo', {test: 1}));
+  console.log(await webSocket.call('echo', {test: 1}));
+  await creeper.set(await webSocket.call('creeper.get', {}));
+  await webSocket.call('creeper.update', {name: 'bob', location: '/home'})
 })();
 
 render(<Application/>, document.getElementById('root'));

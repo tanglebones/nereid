@@ -3,11 +3,11 @@
 
 import {
   ctxReqType,
-  ctxWsType,
+  ctxWebSocketType,
   reqHandlerType,
   serverSettingsType,
   webSocketExtendedType,
-  wsHandlerType,
+  webSocketHandlerType,
 } from './server.type';
 import {IncomingMessage, Server} from 'http';
 import WebSocket from 'ws';
@@ -17,68 +17,75 @@ import {serializableType, serialize} from "@nereid/anycore";
 import {dbProviderType} from "./db/db_provider.type";
 import {sessionUpdate} from "./db/db_session";
 
-export type wsType = {
+export type webSocketType = {
   wss: WebSocket.Server,
-  call(ctxWs: ctxWsType, callName: string, params: serializableType): Promise<serializableType>,
+  call(ctxWebSocket: ctxWebSocketType, callName: string, params: serializableType): Promise<serializableType>,
 };
 
-export const wsInit = (
-  wsHandlerRegistry: Readonly<Record<string, wsHandlerType>>,
+export const webSocketInit = (
+  webSocketHandlerRegistry: Readonly<Record<string, webSocketHandlerType>>,
   server: Server,
   settings: serverSettingsType,
   sessionInit: reqHandlerType | undefined,
   dbProvider: dbProviderType,
   tuidFactory: () => string,
-  wsOnConnectHandler?: (ctxWs: ctxWsType) => Promise<serializableType>,
-  wsOnCloseHandler?: (ctxWs: ctxWsType) => Promise<serializableType>,
+  onConnectHandler?: (ctxWs: ctxWebSocketType) => Promise<serializableType>,
+  onCloseHandler?: (ctxWs: ctxWebSocketType) => Promise<serializableType>,
 ) => {
-  const wss = new WebSocket.Server({
+  const webSocketServer = new WebSocket.Server({
     noServer: true,
     backlog: 32,
   });
 
-  const heartbeat = (ctxWs: ctxWsType) => {
+  const heartbeat = (ctxWs: ctxWebSocketType) => {
     ctxWs.ws.isAlive = true;
   };
 
-  const fromRemote = async (ctxWs: ctxWsType, data: WebSocket.RawData) => {
+  const fromRemote = async (ctxWs: ctxWebSocketType, data: WebSocket.RawData) => {
     try {
-      const i: { id?: string; n?: string; a?: serializableType, s?: string, e?: serializableType, r?: serializableType } = JSON.parse(data.toString('utf8'));
-      const ss = i.s?.[0];
-      if (i.id && i.n && ss === '?') {
+      const packet: {
+        id?: string;
+        n?: string; // name
+        a?: serializableType, // args
+        s?: string, // state
+        e?: serializableType, // error
+        r?: serializableType // result
+      } = JSON.parse(data.toString('utf8'));
+      const state = packet.s?.[0];
+      if (packet.id && packet.n && state === '?') {
         try {
-          const call = wsHandlerRegistry[i.n];
+          const call = webSocketHandlerRegistry[packet.n];
           if (call) {
-            const r = await call(ctxWs, i.a);
+            const r = await call(ctxWs, packet.a);
             if (ctxWs.settings.session?.enabled) {
               await sessionUpdate(ctxWs);
             }
             ctxWs.ws.send(JSON.stringify({
-              id: i.id,
+              id: packet.id,
               s: '+',
               r,
             }));
           } else {
             ctxWs.ws.send(JSON.stringify({
-              id: i.id,
+              id: packet.id,
               s: '-NF',
             }));
           }
         } catch (e) {
           ctxWs.ws.send(JSON.stringify({
-            id: i.id,
+            id: packet.id,
             s: '-EX',
             e,
           }));
         }
-      } else if (i.id && (ss === '+' || ss === '-')) {
-        const req = ctxWs.requests[i.id];
-        delete ctxWs.requests[i.id];
+      } else if (packet.id && (state === '+' || state === '-')) {
+        const req = ctxWs.requests[packet.id];
+        delete ctxWs.requests[packet.id];
         if (req) {
-          if (ss === '+') {
-            req.resolve(i.r);
+          if (state === '+') {
+            req.resolve(packet.r);
           } else {
-            req.reject(i.e);
+            req.reject(packet.e);
           }
         }
       } else {
@@ -95,7 +102,7 @@ export const wsInit = (
   };
 
   const ping = () => {
-    wss.clients.forEach((ws: WebSocket) => {
+    webSocketServer.clients.forEach((ws: WebSocket) => {
       const wse = ws as webSocketExtendedType;
       if (!wse.isAlive) {
         return ws.terminate();
@@ -107,14 +114,14 @@ export const wsInit = (
 
   setInterval(ping, 30000);
 
-  const ctxWsRegistry = {} as Record<string, ctxWsType>;
+  const ctxWsRegistry = {} as Record<string, ctxWebSocketType>;
 
-  const onClose = async (ctxWs: ctxWsType) => {
+  const onClose = async (ctxWs: ctxWebSocketType) => {
     const removed = ctxWsRegistry[ctxWs.sessionId];
     delete ctxWsRegistry[ctxWs.sessionId];
     if (removed) {
       try {
-        await wsOnCloseHandler?.(ctxWs);
+        await onCloseHandler?.(ctxWs);
       } catch (e) {
         console.error('onClose exception:', e);
       }
@@ -128,7 +135,7 @@ export const wsInit = (
     }
   };
 
-  wss.on('connection', async (ctxWs: ctxWsType) => {
+  webSocketServer.on('connection', async (ctxWs: ctxWebSocketType) => {
     if (ctxWs.ws.protocol !== 'rpc1') {
       ctxWs.ws.send(serialize({supportedProtocols: ['rpc1']}));
       ctxWs.ws.terminate();
@@ -138,21 +145,19 @@ export const wsInit = (
     ctxWs.ws.on('close', () => onClose(ctxWs));
     ctxWs.ws.on('pong', () => heartbeat(ctxWs));
     try {
-      await wsOnConnectHandler?.(ctxWs);
+      await onConnectHandler?.(ctxWs);
     } catch (e) {
       console.error('onConnect exception:', e);
     }
     ctxWs.ws.on('message', data => fromRemote(ctxWs, data));
   });
 
-  const isActive = (ws: WebSocket | undefined): boolean => ws?.readyState === WebSocket.OPEN;
-
-  const processPending = (): void => {
+  const processPending = () => {
     Object.values(ctxWsRegistry).forEach(ctx => {
       const ids = Object.keys(ctx.requests);
       for (const id of ids) {
         const r = ctx.requests[id];
-        if (r && isActive(r.ctxWs?.ws) && !r.sent) {
+        if (r?.ctxWs?.ws?.readyState === WebSocket.OPEN && !r.sent) {
           r.ctxWs.ws?.send(r.data);
           r.sent = true;
         }
@@ -160,7 +165,7 @@ export const wsInit = (
     });
   };
 
-  const call = (ctxWs: ctxWsType, callName: string, params: serializableType) =>
+  const call = (ctxWs: ctxWebSocketType, callName: string, params: serializableType) =>
     new Promise<serializableType>(
       (resolve, reject) => {
         const id = tuidFactory();
@@ -173,26 +178,33 @@ export const wsInit = (
           data,
           sent: false,
         };
-        if (isActive(ctxWs.ws)) {
+        if (ctxWs.ws?.readyState === WebSocket.OPEN) {
           processPending();
         }
       });
 
   type IncomingMessageEx = IncomingMessage & { _: { ctx: ctxReqType } };
 
-  wss.on('headers', (headers: string[], req: IncomingMessage) => {
+  webSocketServer.on('headers', (headers: string[], req: IncomingMessage) => {
+    // this is a hack to get the ctx to the headers event where we need the session data
+    const ctx = (req as IncomingMessageEx)._.ctx;
+    if (!settings.session?.enabled) {
+      return;
+    }
+
+    // emulate ctxHost and
     const hostHdr = req.headers.host;
-    const m = hostHdr?.match(/([^.]+\.)*(?<tld>[^.:]+\.[^.:]+)(:\d+)?$/);
+
+    // match not a ., a ., then not a . or :, then optionally a :port.
+    // this gives the domain without any subdomains or ports.
+    const m = hostHdr?.match(/(?<tld>[^.]+\.[^.:]+)(:\d+)?$/);
     const host = m?.groups?.tld;
 
     if (host) {
-      const ctx = (req as IncomingMessageEx)._.ctx;
-      if (ctx.settings.session?.enabled) {
-        const sessionId = ctx.sessionId;
-        // SameSite=Lax is required for the redirect from GoogleAuth back to our server to send cookies in Chrome.
-        const header = `Set-Cookie: SessionId=${sessionId}; HttpOnly; Path=/; SameSite=None; Domain=${host}; Max-Age=3600${settings.schema === 'https' ? '; Secure' : ''}`;
-        headers.push(header);
-      }
+      const sessionId = ctx.sessionId;
+      // SameSite=Lax is required for the redirect from GoogleAuth back to our server to send cookies in Chrome.
+      const header = `Set-Cookie: SessionId=${sessionId}; HttpOnly; Path=/; SameSite=None; Domain=${host}; Max-Age=3600${settings.schema === 'https' ? '; Secure' : ''}`;
+      headers.push(header);
     }
   });
 
@@ -214,15 +226,15 @@ export const wsInit = (
       // this is a hack to get the ctx to the headers event where we need the session data
       reqEx._ = {ctx};
 
-      wss.handleUpgrade(req, socket, head, ws => {
+      webSocketServer.handleUpgrade(req, socket, head, ws => {
         try {
           const wsX: webSocketExtendedType = ws as webSocketExtendedType;
           wsX.isAlive = true;
 
-          const ctxWs: ctxWsType = {
+          const ctxWs: ctxWebSocketType = {
             ws: wsX,
             remoteAddress: ctx.remoteAddress,
-            sessionId: ctx.sessionId || tuidFactory(), // ||, not ??, so we replate '' with a sessionId.
+            sessionId: ctx.sessionId || tuidFactory(), // ||, not ??, so we replace '' with a sessionId.
             session: ctx.session,
             user: ctx.user,
             dbProviderCtx: ctx.dbProviderCtx,
@@ -245,7 +257,7 @@ export const wsInit = (
 
           ctxWsRegistry[ctxWs.sessionId] = ctxWs;
 
-          wss.emit('connection', ctxWs);
+          webSocketServer.emit('connection', ctxWs);
         } catch (e) {
           console.error('handleUpdate exception', e);
         }
@@ -255,5 +267,5 @@ export const wsInit = (
     }
   });
 
-  return {wss, call};
+  return {wss: webSocketServer, call};
 };

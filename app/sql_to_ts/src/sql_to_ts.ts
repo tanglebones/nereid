@@ -1,6 +1,5 @@
 #!/usr/bin/env node
 import * as fs from "fs";
-import * as p from "path";
 import {main} from "@nereid/nodemain";
 
 export const readdirRecursiveSync = function* readdirRecursiveSync(path) {
@@ -8,12 +7,12 @@ export const readdirRecursiveSync = function* readdirRecursiveSync(path) {
   let stats;
 
   for (const file of files) {
-
-    stats = fs.lstatSync(p.join(path, file));
+    const fullfilename = `${path}/${file}`;
+    stats = fs.lstatSync(fullfilename);
     if (stats.isDirectory()) {
-      yield* readdirRecursiveSync(p.join(path, file));
+      yield* readdirRecursiveSync(fullfilename);
     } else {
-      yield p.join(path, file);
+      yield fullfilename;
     }
   }
 };

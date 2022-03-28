@@ -11,4 +11,5 @@ export * from './resolved';
 export * from './recursive_partial.type';
 export * from './serialize';
 export * from './signature';
+export * from './star_repo';
 export * from './to_url_param';

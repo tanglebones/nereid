@@ -12,6 +12,7 @@
   "dependencies": {
     "@nereid/anycore": "*",
     "@nereid/webcore": "*",
-    "@nereid/webreactexample": "*"
+    "@nereid/webreactexample": "*",
+    "@nereid/creeper": "*"
   }
 }

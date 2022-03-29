@@ -9,6 +9,9 @@ const tuidFactory = () => (++tuidId).toString(16).padStart(32, '0');
 describe('starRepo', () => {
   const append = (eventParams: serializableType, state: Draft<Record<string, serializableType>>) => {
     Object.assign(state, eventParams);
+    if ((eventParams as Record<string, boolean>).exception) {
+      throw new Error("Some Error");
+    }
   };
 
   const remove = (eventParams: serializableType, state: Draft<Record<string, serializableType>>) => {
@@ -46,6 +49,9 @@ describe('starRepo', () => {
     const c2cm1 = await srClient2.commit('remove', {what: 'c'});
     assert(c2cm1);
 
+    assert.strictEqual(srClient0.pendingCount, 1);
+    assert.strictEqual(srClient1.pendingCount, 1);
+    assert.strictEqual(srClient2.pendingCount, 2);
 
     assert.deepStrictEqual(srClient0.state, {a: 1});
     assert.deepStrictEqual(srClient0.serverState, {});
@@ -118,7 +124,103 @@ describe('starRepo', () => {
     assert.deepStrictEqual(srClient2.state, {b: 2, a: 1});
     assert.deepStrictEqual(srClient2.serverState, {b: 2, a: 1});
 
+    assert.strictEqual(srClient1.serverStateSignature, '125600492fb0dec7');
+    srClient1.serverState = {};
+    assert.strictEqual(srClient1.serverStateSignature, '2e1472b57af294d1');
+    assert.strictEqual(srClient1.clientId, '00000000000000000000000000000002')
+
     assert.strictEqual(0, errors.length);
+
+    const eventRegistrySignature = '5ed83c298a4eaafc';
+    const preMergeSignature = '125600492fb0dec7';
+    await srClient0.onRebase({eventRegistrySignature: 'nope'});
+    await srClient0.onRebase({eventRegistrySignature})
+    await srClient0.onRebase({eventRegistrySignature, preMergeSignature})
+    await srClient0.onRebase({eventRegistrySignature, preMergeSignature, event: {}})
+    await srClient0.onRebase({eventRegistrySignature, preMergeSignature, event: {name: "nope"}});
+    await srClient0.onRebase({eventRegistrySignature, preMergeSignature, event: {name: "append", params: {d: 1}}});
+    await srClient0.onRebase({
+      eventRegistrySignature,
+      preMergeSignature,
+      event: {name: "append", params: {exception: true}}
+    });
+    await srClient0.commit('nope', {});
+
+    assert.deepStrictEqual(
+      errors,
+      [
+        {
+          "details": {
+            "localSignature": "5ed83c298a4eaafc",
+            "remoteSignature": "nope",
+          },
+          "error": "ON_REMOTE_EVENT_REGISTRY_SIGNATURE_MISMATCH"
+        },
+        {
+          "details": {
+            "preMergeSignature": undefined,
+            "signature": "125600492fb0dec7"
+          },
+          "error": "ON_REMOTE_STATE_PRE_SIGNATURE_MISMATCH"
+        },
+        {
+          "details": {
+            "postMergeSignature": undefined,
+            "signature": "1c99c7ee8735e782"
+          },
+          "error": "ON_REMOTE_STATE_POST_SIGNATURE_MISMATCH"
+        },
+        {
+          "details": {
+            "exception": 'Error: Some Error'
+          },
+          "error": "ON_REMOTE_EXCEPTION"
+        },
+        {
+          "details": {
+            "local": true,
+            "name": "nope"
+          },
+          "error": "NOT_IN_EVENT_REGISTRY"
+        }
+      ]
+    );
+
+    errors.length = 0;
+
+    assert.deepStrictEqual(srServer.state, {a:1,b:2});
+    assert.strictEqual(srServer.stateSignature, "125600492fb0dec7");
+
+    srServer.mergeCommit({eventRegistrySignature: 'nope'});
+    srServer.mergeCommit({eventRegistrySignature});
+    srServer.mergeCommit({eventRegistrySignature, event: {}});
+    srServer.mergeCommit({eventRegistrySignature, event: {name: "nope"}});
+    srServer.mergeCommit({
+      eventRegistrySignature, event: {name: "append", params: {exception: true}}
+    });
+
+    assert.deepStrictEqual(srServer.state, {a:1,b:2});
+    assert.strictEqual(srServer.stateSignature, "125600492fb0dec7");
+
+    assert.deepStrictEqual(
+      errors,
+      [
+        {
+          "details": {
+            "localSignature": "5ed83c298a4eaafc",
+            "remoteSignature": "nope",
+          },
+          "error": "ON_REMOTE_EVENT_REGISTRY_SIGNATURE_MISMATCH"
+        },
+        {
+          "details": {
+            "exception": "Error: Some Error"
+          },
+          "error": "ON_REMOTE_EXCEPTION"
+        }
+      ]
+    );
   });
-});
+})
+;
 

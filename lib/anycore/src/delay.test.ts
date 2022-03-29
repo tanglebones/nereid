@@ -34,7 +34,7 @@ describe('delay', () => {
     const diff = end - start;
 
     assert.strictEqual(onCancelRequestedStub.callCount, 1);
-    assert(diff < 110);
+    assert(diff < 150);
     assert(diff >= 100);
   });
 

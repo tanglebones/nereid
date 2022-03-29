@@ -77,7 +77,7 @@ export const starRepositoryServerFactory = (
 
       return eventPacket;
     } catch (exception) {
-      onError('ON_REMOTE_EXCEPTION', {exception});
+      onError('ON_REMOTE_EXCEPTION', {exception: `${exception}`});
     }
   };
 
@@ -162,7 +162,7 @@ export const starRepositoryCloneFactoryCtor = (tuidFactory: () => string) => (
       if (eventPacket?.preMergeSignature !== serverStateSignature) {
         onError('ON_REMOTE_STATE_PRE_SIGNATURE_MISMATCH', {
           signature: serverStateSignature,
-          preEventSignature: eventPacket.preMergeSignature,
+          preMergeSignature: eventPacket.preMergeSignature,
         });
         return;
       }
@@ -184,7 +184,7 @@ export const starRepositoryCloneFactoryCtor = (tuidFactory: () => string) => (
       }
 
       const _state = serverState;
-
+      const _sig = serverStateSignature;
       serverState = produce(serverState, x => stateModifier(event.params, x));
 
       computeServerStateSignature();
@@ -194,7 +194,10 @@ export const starRepositoryCloneFactoryCtor = (tuidFactory: () => string) => (
           signature: serverStateSignature,
           postMergeSignature: eventPacket.postMergeSignature,
         });
-        serverState = _state; // revert
+
+        // revert
+        serverState = _state;
+        serverStateSignature = _sig;
         return;
       }
 
@@ -210,7 +213,7 @@ export const starRepositoryCloneFactoryCtor = (tuidFactory: () => string) => (
       }
 
     } catch (exception) {
-      onError('ON_REMOTE_EXCEPTION', {exception});
+      onError('ON_REMOTE_EXCEPTION', {exception: `${exception}`});
     }
   };
 

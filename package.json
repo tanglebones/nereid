@@ -9,7 +9,7 @@
     "pgdb/*"
   ],
   "scripts": {
-    "build": "node ./build_all.js | sh",
+    "build": "node ./build_all.js | bash",
     "reset_pgdb_eg": "PATH=%PATH:/c/pg/14/bin:$PATH && pushd pgdb/db/example/ && ./setup.sh && popd"
   },
   "devDependencies": {

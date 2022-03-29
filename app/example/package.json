@@ -8,8 +8,6 @@
     "start": "node dist/index.js",
     "dev": "ts-node src/index.ts",
     "build": "tsc",
-    "test": "mocha",
-    "cover": "nyc mocha",
     "lint": "eslint src --ext .js,.jsx,.ts,.tsx",
     "doc": "npx typedoc src/*.ts src/**/*.ts --out dist/doc"
   },

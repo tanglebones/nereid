@@ -13,6 +13,6 @@
   "author": "Cliff Hammerschmidt",
   "license": "MIT",
   "dependencies": {
-    "@nereid/nodemain": "^0.1.0"
+    "@nereid/nodemain": "*"
   }
 }

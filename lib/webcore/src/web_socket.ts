@@ -1,3 +1,7 @@
+// istanbul ignore file
+// -- todo: extract and common-ize the protocol into anycore & add tests
+// -- for now this will be tested via usage in examples as the protocol is still evolving.
+
 import {serializableType} from '@nereid/anycore';
 import {DateTime, Duration} from 'luxon';
 

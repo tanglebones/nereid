@@ -33,16 +33,16 @@ export const crCtor = (
 
   const serverInit = () => {
     const n = randomBytes(32);
-    const nb64 = n.toString('base64');
+    const nb64 = n.toString('base64url');
     return {nb64};
   };
 
 
   const serverSetup = (hpnb64: string) => {
-    if (hpnb64.length !== 88) {
+    if (hpnb64.length !== 86) {
       throw new Error('INVALID_PARAMETERS');
     }
-    const hpn = Buffer.from(hpnb64, 'base64');
+    const hpn = Buffer.from(hpnb64, 'base64url');
     const salt = bcrypt.genSaltSync();
     const hpns = String.fromCharCode(...hpn);
     const q = bcrypt.hashSync(hpns, salt);
@@ -112,7 +112,7 @@ export const crCtor = (
     if (ts < tenMinutesAgoEpochMs) {
       return false;
     }
-    const f = Buffer.from(fb64, 'base64');
+    const f = Buffer.from(fb64, 'base64url');
     const cs = createHmac('sha512', r).update(q).digest();
     const hpn = bufferXor(f, cs);
     const hpns = String.fromCharCode(...hpn);
@@ -122,19 +122,19 @@ export const crCtor = (
   };
 
   const clientInit = (password: string, nb64: string) => {
-    const n = Buffer.from(nb64, 'base64');
-    const hpnb64 = createHash('sha512').update(password).update(n).digest('base64');
+    const n = Buffer.from(nb64, 'base64url');
+    const hpnb64 = createHash('sha512').update(password).update(n).digest('base64url');
     return {hpnb64: hpnb64};
   };
 
   const clientResponse = (r: string, nb64: string, salt: string, password: string) => {
-    const n = Buffer.from(nb64, 'base64');
+    const n = Buffer.from(nb64, 'base64url');
     const hpn = createHash('sha512').update(password).update(n).digest();
     const hpns = String.fromCharCode(...hpn);
     const q = bcrypt.hashSync(hpns, salt);
     const cc = createHmac('sha512', r).update(q).digest();
     const f = bufferXor(hpn, cc);
-    const fb64 = f.toString('base64');
+    const fb64 = f.toString('base64url');
     return {fb64};
   };
 

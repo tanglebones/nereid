@@ -65,7 +65,7 @@ describe('cr', () => {
 
     // client
     const {hpnb64} = cr.clientInit(password, nb64);
-    // -- send hpn64 to server
+    // -- send hpnb64 to server
 
     // server
     const {q} = cr.serverSetup(hpnb64);
@@ -98,12 +98,12 @@ describe('cr', () => {
 
   it('known case', () => {
     const r = "0005bba40debad081abe1faf9d3685b50d7af9990afe17da81d2affa6c7a8f25|306d165550ef10e7d58c0dbd68f7333c25dc094345d0b58e1c6eb673ebcb680c"
-    const nb64 = "0AIknPMK3vwDj1GXQbWjxlvL5AkCC+bP7xOC9ePjBGE="
+    const nb64 = "0AIknPMK3vwDj1GXQbWjxlvL5AkCC-bP7xOC9ePjBGE"
     const salt = "$2a$10$mnymedWwVuipoNpzlfYPs."
     const password = 'asdfasdf';
 
     const {fb64} = cr.clientResponse(r, nb64, salt, password);
-    const fb64Expected = "hMXJUBYERTverlr01LIz9Kq8ky9V3zIDT2oou3CfMn19CZz9Zx4FNs6uO7/BXHRMT6L0nzgdRIMo3a3eW5x+RQ==";
+    const fb64Expected = "hMXJUBYERTverlr01LIz9Kq8ky9V3zIDT2oou3CfMn19CZz9Zx4FNs6uO7_BXHRMT6L0nzgdRIMo3a3eW5x-RQ";
     assert(fb64 === fb64Expected);
   });
 });

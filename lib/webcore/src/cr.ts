@@ -1,3 +1,4 @@
+import { base64ToBase64Url } from '@nereid/anycore';
 import bcrypt from 'bcryptjs';
 import JsSha from 'jssha';
 import {
@@ -15,7 +16,7 @@ export const crClientInit = (password: string, nb64: string): { hpnb64: string }
   sha512.update(stringToUint8Array(password));
   sha512.update(n);
 
-  return {hpnb64: sha512.getHash('B64')};
+  return {hpnb64: base64ToBase64Url(sha512.getHash('B64'))};
 };
 
 export const crClientResponse = (r: string, nb64: string, salt: string, password: string): { fb64: string } => {

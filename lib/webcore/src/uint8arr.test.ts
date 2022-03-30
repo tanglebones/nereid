@@ -25,5 +25,11 @@ describe('uint8Array', () => {
       ),
       "0110ff00"
     )
+    assert.throws(()=>{
+      uint8ArrayXor(
+        hexToUint8Array("1011f0a1"),
+        hexToUint8Array("11010f")
+      )
+    })
   });
 });

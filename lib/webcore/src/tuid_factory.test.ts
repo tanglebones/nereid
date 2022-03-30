@@ -15,7 +15,6 @@ describe('tuidFactory', () => {
   const tuidFactory = tuidFactoryCtor(fakeWindow, () => DateTime.now().toUTC().toMillis());
   it("basics", () => {
     const tuid = tuidFactory();
-    console.log(tuid);
     assert(tuid.startsWith("A"));
     assert.strictEqual(22, tuid.length);
   });

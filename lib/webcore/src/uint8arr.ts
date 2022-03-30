@@ -1,3 +1,5 @@
+import {base64ToBase64Url, base64UrlToBase64 } from "@nereid/anycore";
+
 const byteToHex: string[] = new Array(256);
 const lcHexToByte: Record<string, number> = {};
 
@@ -18,11 +20,11 @@ export const stringToUint8Array = (s: string): Uint8Array => {
 
 // noinspection JSDeprecatedSymbols
 export const base64UrlToUint8Array = (base64: string) =>
-  stringToUint8Array(atob(base64.replaceAll('_', '/').replaceAll('-', '+')));
+  stringToUint8Array(atob(base64UrlToBase64(base64)));
 
 // noinspection JSDeprecatedSymbols
 export const uint8ArrayToBase64Url = (a: Uint8Array) =>
-  btoa(uint8ArrayToString(a)).replaceAll('/', '_').replaceAll('+', '-').replaceAll('=', '');
+  base64ToBase64Url(btoa(uint8ArrayToString(a)));
 
 export const uint8ArrayToHex = (uint8Array: Uint8Array) => {
   const hexOctets = new Array(uint8Array.length);

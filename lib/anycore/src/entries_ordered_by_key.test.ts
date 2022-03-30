@@ -8,7 +8,7 @@ describe("entriesOrderedByKey", () => {
     assert.deepStrictEqual(entitiesOrderedByKey(Object.entries(obj)), [['a', 2], ['m', 1], ['z', 3]]);
     assert.deepStrictEqual(entitiesOrderedByKey([['m', 1], ['a', 2], ['m', 1], ['z', 3]]), [['a', 2], ['m', 1], ['m', 1], ['z', 3]]);
   });
-  it("forward", () => {
+  it("reverse", () => {
     assert.deepStrictEqual(entitiesOrderedByKeyReversed(Object.entries(obj)), [['z', 3], ['m', 1], ['a', 2]]);
     assert.deepStrictEqual(entitiesOrderedByKeyReversed([['m', 1], ['z', 3], ['m', 1], ['a', 2]]), [['z', 3], ['m', 1], ['m', 1], ['a', 2]]);
   });

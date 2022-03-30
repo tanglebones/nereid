@@ -1,7 +1,7 @@
 import React from 'react';
-import {render} from 'react-dom';
+import {createRoot} from 'react-dom/client';
 import {Counter} from "@nereid/webreactexample";
-import {creeper, webSocket} from "./bootstrap";
+import {creeper, tuidFactory, webSocket} from "./bootstrap";
 
 const Application = () => (
   <div>
@@ -10,12 +10,17 @@ const Application = () => (
   </div>
 );
 
-console.log("here");
-
 (async () => {
   console.log(await webSocket.call('echo', {test: 1}));
-  await creeper.set(await webSocket.call('creeper.get', {}));
-  await webSocket.call('creeper.update', {name: 'bob', location: '/home'})
-})();
+  const repo = creeper.repo;
+  repo.serverState = await webSocket.call('creeper.getState', {});
 
-render(<Application/>, document.getElementById('root'));
+  await webSocket.call('creeper.commit', repo.localCommit('updateV0', {
+    login_id: tuidFactory(),
+    name: 'bob',
+    location: '/home'
+  }));
+})().catch(console.error);
+
+const root = createRoot(document.getElementById('root') as Element);
+root.render(<Application/>);

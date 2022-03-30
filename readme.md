@@ -62,6 +62,21 @@ git config --global core.autocrlf false
 git config --global core.eol lf   
 ```
 
+### Setup for nvm
+
+* todo
+* note: it is *really* slow on Windows :(
+
+in your `.zshrc` use `--no-use` to speed up the load a lot:
+```shell
+export NVM_DIR="$HOME/.nvm"
+[ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh" --no-use  # This loads nvm without adding node to the path
+[ -s "$NVM_DIR/bash_completion" ] && \. "$NVM_DIR/bash_completion"  # This loads nvm bash_completion
+export PATH=~/.nvm/versions/node/v17.8.0/bin:$PATH # update to your default when it changes.
+```
+
+
+
 ### Setup for Nereid
 
 * `git clone` the repo

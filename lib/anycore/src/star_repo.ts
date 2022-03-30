@@ -21,7 +21,7 @@ export type eventPacketType = {
 };
 
 export type starRepositoryServerType = {
-  mergeCommit: (commitMessageFromClient: serializableType) => Promise<serializableType>;
+  mergeCommit: (commitMessageFromClient: serializableType) => serializableType;
   readonly state: serializableType;
   readonly stateSignature: string;
 };
@@ -41,7 +41,7 @@ export const starRepositoryServerFactory = (
 
   computeStateSignature();
 
-  const mergeCommit = async (commitMessageFromClient: serializableType) => {
+  const mergeCommit = (commitMessageFromClient: serializableType) => {
     try {
       const eventPacket = commitMessageFromClient as RecursivePartial<eventPacketType>;
       if (eventPacket.eventRegistrySignature !== eventRegistrySignature) {
@@ -93,11 +93,11 @@ export const starRepositoryServerFactory = (
 };
 
 export type starRepositoryCloneType = {
-  commit: (name: string, params: serializableType) => Promise<serializableType>;
-  onRebase: (mergeMessageFromServer: serializableType) => Promise<void>;
+  localCommit: (name: string, params: serializableType) => serializableType;
+  onRebase: (mergeMessageFromServer: serializableType) => void;
   readonly clientId: string;
   readonly pendingCount: number;
-  readonly state: immutableSerializableType;
+  readonly localState: immutableSerializableType;
   serverState: immutableSerializableType;
   readonly serverStateSignature: string;
 };
@@ -108,10 +108,11 @@ export const starRepositoryCloneFactoryCtor = (tuidFactory: () => string) => (
   initialState: serializableType, // get it from the server
 ): starRepositoryCloneType => {
   const clientId = tuidFactory();
-  const localPendingEvents = {} as Record<string, eventType>;
   const eventRegistrySignature = signatureObjectKeys(eventRegistry);
+
+  let localPendingEvents = {} as Record<string, eventType>;
   let serverState: immutableSerializableType = produce(initialState, (x) => x); // committed at the server
-  let state: immutableSerializableType = serverState; // server + local events not yet committed at the server
+  let localState: immutableSerializableType = serverState; // server + local events not yet committed at the server
   let serverStateSignature = '';
 
   const computeServerStateSignature = () => {
@@ -120,7 +121,7 @@ export const starRepositoryCloneFactoryCtor = (tuidFactory: () => string) => (
 
   computeServerStateSignature();
 
-  const commit = async (name: string, params: serializableType): Promise<serializableType> => {
+  const localCommit = (name: string, params: serializableType): serializableType => {
     const stateModifier = eventRegistry[name];
 
     if (!stateModifier) {
@@ -133,7 +134,7 @@ export const starRepositoryCloneFactoryCtor = (tuidFactory: () => string) => (
 
     localPendingEvents[eventId] = event;
 
-    state = produce(state, x => stateModifier(event.params, x));
+    localState = produce(localState, x => stateModifier(event.params, x));
 
     return {
       event,
@@ -143,7 +144,7 @@ export const starRepositoryCloneFactoryCtor = (tuidFactory: () => string) => (
     }; // commitMessage to send to server
   };
 
-  const onRebase = async (mergeMessageFromServer: serializableType) => {
+  const onRebase = (mergeMessageFromServer: serializableType) => {
     try {
       const eventPacket = mergeMessageFromServer as RecursivePartial<eventPacketType>;
       if (eventPacket.eventRegistrySignature !== eventRegistrySignature) {
@@ -201,7 +202,7 @@ export const starRepositoryCloneFactoryCtor = (tuidFactory: () => string) => (
         return;
       }
 
-      state = serverState;
+      localState = serverState;
 
       // replay local events not yet merged by the server.
       const localPendingEventIdsInOrder = Object.keys(localPendingEvents).sort();
@@ -209,7 +210,7 @@ export const starRepositoryCloneFactoryCtor = (tuidFactory: () => string) => (
         const event = localPendingEvents[id];
         const stateModifier = eventRegistry[event.name];
 
-        state = produce(state, x => stateModifier(event.params, x));
+        localState = produce(localState, x => stateModifier(event.params, x));
       }
 
     } catch (exception) {
@@ -218,15 +219,17 @@ export const starRepositoryCloneFactoryCtor = (tuidFactory: () => string) => (
   };
 
   return {
-    commit,
+    localCommit,
     onRebase,
-    get state() {
-      return state as serializableType;
+    get localState() {
+      return localState as serializableType;
     },
     get serverState() {
       return serverState as serializableType;
     },
     set serverState(newState: serializableType){
+      localState = newState;
+      localPendingEvents = {};
       serverState = produce(newState, x=>x);
       computeServerStateSignature();
     },

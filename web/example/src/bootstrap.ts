@@ -1,11 +1,12 @@
 import {DateTime} from "luxon";
-import {tuidFactoryCtor, webSocketCtor} from "@nereid/webcore";
+import {tuidFactoryCtor, webSocketFactoryCtor, webSocketHandlerType} from "@nereid/webcore";
 import {echo} from "./web_socket/echo";
 import {starRepositoryCloneFactoryCtor} from "@nereid/anycore/dist/star_repo";
 import {creeperCtor} from "./web_socket/creeper";
+import {creeperEventRegistryCtor} from "@nereid/creeper";
 
 const nowMs = () => DateTime.now().toUTC().toMillis();
-const tuidFactory = tuidFactoryCtor(window, nowMs);
+export const tuidFactory = tuidFactoryCtor(window, nowMs);
 
 const wsHostName = (subdomain: string) => {
   const hostParts = window.location.hostname.split('.').reverse();
@@ -13,14 +14,16 @@ const wsHostName = (subdomain: string) => {
 };
 
 const starRepositoryCloneFactory = starRepositoryCloneFactoryCtor(tuidFactory);
-export const creeper = creeperCtor(starRepositoryCloneFactory);
+export const creeper = creeperCtor(starRepositoryCloneFactory,creeperEventRegistryCtor(nowMs));
 
-const webSocketHandlerRegistry = {
+const webSocketHandlerRegistry: Readonly<Record<string, webSocketHandlerType>> = {
   'echo': echo,
-  'creeper.commit': creeper.commit,
+  'creeper.rebase': creeper.wsRebase,
+  'creeper.setState': creeper.wsSetState,
 };
 
-export const webSocket = webSocketCtor(tuidFactory, window.setTimeout, window.clearTimeout)(
+const webSocketFactory = webSocketFactoryCtor(tuidFactory, window.setTimeout, window.clearTimeout);
+export const webSocket = webSocketFactory(
   wsHostName('api'),
   webSocketHandlerRegistry,
 );

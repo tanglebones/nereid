@@ -1,24 +1,26 @@
-import {serializableType} from "@nereid/anycore";
+import {serializableType, stateModifierFunctionType} from "@nereid/anycore";
 import {starRepositoryCloneFactoryType} from "@nereid/anycore/dist/star_repo";
-import {creeperEventRegistry} from "@nereid/creeper";
 
-export const creeperCtor = (starRepositoryCloneFactory: starRepositoryCloneFactoryType) => {
-  const srCreeper = starRepositoryCloneFactory(
+export const creeperCtor = (
+  starRepositoryCloneFactory: starRepositoryCloneFactoryType,
+  creeperEventRegistry: Readonly<Record<string, stateModifierFunctionType>>
+) => {
+  const repo = starRepositoryCloneFactory(
     creeperEventRegistry,
     console.error,
     {}
   );
 
-  const set = async (params: serializableType) => {
-    srCreeper.serverState = params;
+  const wsSetState = async (params: serializableType) => {
+    repo.serverState = params;
     return true;
   }
 
-  const commit = async (params: serializableType) => {
-    srCreeper.onRebase(params);
-    console.log('creeper commit', srCreeper.state);
+  const wsRebase = async (params: serializableType) => {
+    repo.onRebase(params);
+    console.log(repo.localState);
     return true;
   }
 
-  return {commit, set};
+  return {wsRebase, wsSetState, repo};
 }

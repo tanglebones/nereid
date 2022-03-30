@@ -24,7 +24,7 @@ type requestType = {
   timeoutHandle: number,
 };
 
-export let webSocketCtor = (
+export let webSocketFactoryCtor = (
   tuidFactory: () => string,
   setTimeout: (cb: () => void, delayMs: number) => number,
   clearTimeout: (handle: number) => void

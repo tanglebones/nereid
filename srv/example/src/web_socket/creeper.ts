@@ -1,60 +1,51 @@
 import {ctxWebSocketType} from '@nereid/nodesrv';
-import {serializableType, starRepositoryServerFactory} from '@nereid/anycore';
+import {serializableType, starRepositoryServerFactory, stateModifierFunctionType} from '@nereid/anycore';
 import WebSocket from "ws";
-import {creeperEventRegistry} from "@nereid/creeper";
 
-const srCreepers = starRepositoryServerFactory(
-  creeperEventRegistry,
-  console.error,
-  {}
-);
+export const creeperCtor = (creeperEventRegistry: Readonly<Record<string, stateModifierFunctionType>>) => {
+  const srCreepers = starRepositoryServerFactory(
+    creeperEventRegistry,
+    console.error,
+    {}
+  );
 
-const others = {} as Record<string, ctxWebSocketType>;
+  const others = {} as Record<string, ctxWebSocketType>;
 
-function subscribeToCommits(ctxWs: ctxWebSocketType) {
-  if (others[ctxWs.sessionId] !== ctxWs) {
-    const toReplace = others[ctxWs.sessionId];
-    if (toReplace) {
-      toReplace.ws.close();
+  const subscribeToCommits = (ctxWs: ctxWebSocketType) => {
+    if (others[ctxWs.sessionId] !== ctxWs) {
+      const toReplace = others[ctxWs.sessionId];
+      if (toReplace) {
+        toReplace.ws.close();
+      }
+      others[ctxWs.sessionId] = ctxWs;
     }
-    others[ctxWs.sessionId] = ctxWs;
-  }
-}
-
-export const creeperGet = async (ctxWs: ctxWebSocketType, _params: serializableType): Promise<serializableType> => {
-  subscribeToCommits(ctxWs);
-  return {state: srCreepers.state};
-};
-
-async function sendCommits(msg: serializableType) {
-  await Promise.all(Object.values(others).map(other => {
-    if (other.ws?.readyState === WebSocket.OPEN) {
-      return other.call('creeper.commit', msg);
-    } else {
-      delete others[other.sessionId];
-    }
-  }));
-}
-
-export const creeperCommit = async (ctxWs: ctxWebSocketType, params: serializableType): Promise<serializableType> => {
-  const p = params as {
-    name?: string,
   };
 
-  if (ctxWs.settings.session?.enabled) {
-    // force name to match session user if we are using sessions.
-    p.name = ctxWs.user?.displayName;
-  }
+  const wsGetState = async (ctxWs: ctxWebSocketType, _params: serializableType): Promise<serializableType> => {
+    subscribeToCommits(ctxWs);
+    return {state: srCreepers.state};
+  };
 
-  if (!p.name) {
-    // name has to be set for this to make any sense.
-    return false;
-  }
+  const sendCommits = async (msg: serializableType) => {
+    await Promise.all(Object.values(others).map(other => {
+      if (other.ws?.readyState === WebSocket.OPEN) {
+        return other.call('creeper.rebase', msg);
+      } else {
+        delete others[other.sessionId];
+      }
+    }));
+  };
 
-  const msg = await srCreepers.mergeCommit(p);
+  const wsCommit = async (ctxWs: ctxWebSocketType, params: serializableType): Promise<serializableType> => {
+    const msg = srCreepers.mergeCommit(params);
 
-  subscribeToCommits(ctxWs);
-  await sendCommits(msg);
+    subscribeToCommits(ctxWs);
+    await sendCommits(msg);
 
-  return true;
+    return true;
+  };
+
+  return {wsGetState, wsCommit};
 };
+
+export type creeperType = ReturnType<typeof creeperCtor>;

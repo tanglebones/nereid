@@ -1,5 +1,5 @@
 import assert from "assert";
-import {promiseStateCtor} from "./promise_state";
+import {promiseStateWrapper} from "./promise_state";
 
 describe("PromiseState", () => {
   it("resolved path", async () => {
@@ -10,7 +10,7 @@ describe("PromiseState", () => {
       pr = r;
     });
 
-    const ps = promiseStateCtor(p);
+    const ps = promiseStateWrapper(p);
 
     assert(ps.isPending);
     assert(!ps.isResolved);
@@ -32,7 +32,7 @@ describe("PromiseState", () => {
     const p: Promise<number> = new Promise((_, r) => {
       pr = r;
     });
-    const ps = promiseStateCtor(p);
+    const ps = promiseStateWrapper(p);
 
     assert(ps.isPending);
     assert(!ps.isResolved);

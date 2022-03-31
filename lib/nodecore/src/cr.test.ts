@@ -125,13 +125,15 @@ describe('cr.serverVerify', () => {
 
   it('Returns false if the stoken cannot be verified', () => {
     assert.strictEqual(cr.serverVerify('fb64', 'r', 'q'), false);
+    assert.strictEqual(cr.serverVerify('fb64', 'r|d', 'q'), false);
   });
 
   it('Returns false if the stuid is too old.', () => {
     // setup based on 'basics' test
     const password = 'testing123';
     const {nb64} = cr.serverInit();
-    const r = '0005c0a9c411d7d83e5885b626410f476d74aaafe3c7233bbbbfd46c2606109ce0c9adef89b3e98bff6c7433d500c636a443fa3407eb2d29ed1ee7f17fb9a307';
+
+    const r = 'AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA|bU-bg9TbATfZPm5lmveZnIk1lbkdELEKgB73Ks4uvJ8';
     const {hpnb64} = cr.clientInit(password, nb64);
     const {q} = cr.serverSetup(hpnb64);
 

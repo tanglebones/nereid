@@ -9,31 +9,15 @@ import {
 } from './stuid';
 
 describe("stuid", () => {
-  const getSut = (format: "hex" | "base64url" | undefined = undefined) => {
+  const getSut = () => {
     const randomFillSyncStub = sinon.stub();
     const nowMsStub = sinon.stub();
-    const stuidFactory = stuidFactoryCtor(randomFillSyncStub, nowMsStub, format);
+    const stuidFactory = stuidFactoryCtor(randomFillSyncStub, nowMsStub);
     return {stuidFactory, randomFillSyncStub, nowMsStub};
   };
 
-  it("works w/ default formatter", () => {
+  it("works", () => {
     const {stuidFactory, randomFillSyncStub, nowMsStub} = getSut();
-
-    nowMsStub.returns(0x7770_7771_7772_777en);
-    assert.strictEqual("77717772777e0000000000000000000000000000000000000000000000000000", stuidFactory());
-    assert.strictEqual("77717772777f0000000000000000000000000000000000000000000000000000", stuidFactory());
-
-    randomFillSyncStub.callsFake((buffer: Buffer, start: number, count: number) => {
-      const end = start + count;
-      for (let i = start; i < end; ++i) {
-        buffer[i] = 0xff;
-      }
-    });
-    assert.strictEqual("777177727780ffffffffffffffffffffffffffffffffffffffffffffffffffff", stuidFactory());
-  });
-
-  it("works w/ b64u formatter", () => {
-    const {stuidFactory, randomFillSyncStub, nowMsStub} = getSut("base64url" as const);
 
     nowMsStub.returns(0x7770_7771_7772_777en);
     assert.strictEqual("d3F3cnd-AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA", stuidFactory());

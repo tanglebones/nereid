@@ -32,6 +32,9 @@
     },
     {
       "path": "../../lib/creeper"
+    },
+    {
+      "path": "../../lib/creeper_client"
     }
   ]
 }

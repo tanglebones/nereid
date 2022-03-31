@@ -9,10 +9,10 @@ import {
 } from './tuid';
 
 describe("tuid", () => {
-  const getSut = (format: "hex" | "base64url" | undefined = undefined) => {
+  const getSut = () => {
     const randomFillSyncStub = sinon.stub();
     const nowMsStub = sinon.stub();
-    const tuidFactory = tuidFactoryCtor(randomFillSyncStub, nowMsStub, format);
+    const tuidFactory = tuidFactoryCtor(randomFillSyncStub, nowMsStub);
     return {tuidFactory, randomFillSyncStub, nowMsStub};
   };
 
@@ -33,7 +33,7 @@ describe("tuid", () => {
   });
 
   it("works w/ b64u formatter", () => {
-    const {tuidFactory, randomFillSyncStub, nowMsStub} = getSut("base64url" as const);
+    const {tuidFactory, randomFillSyncStub, nowMsStub} = getSut();
 
     nowMsStub.returns(0x7770_7771_7772_777en);
     assert.strictEqual("d3F3cnd-AAAAAAAAAAAAAA", tuidFactory());

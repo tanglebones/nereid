@@ -2,12 +2,16 @@ import {cancellationTokenType} from "./cancellation_token";
 
 export const delay = async (milliseconds: number, cancellationToken?: cancellationTokenType) => new Promise<void>(
   (r) => {
+    let unsub: () => void;
     if (cancellationToken) {
       if (cancellationToken.isCancellationRequested) {
         r();
         return;
       }
-      cancellationToken.onCancelRequested(r);
+      unsub = cancellationToken.onCancelRequested(r);
     }
-    setTimeout(r, milliseconds);
+    setTimeout(() => {
+      unsub?.();
+      r();
+    }, milliseconds);
   });

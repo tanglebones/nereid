@@ -11,12 +11,10 @@ export const tuidBase64urlToHex = (s: string) => Buffer.from(s, "base64url").toS
  *
  * @param randomFillSync matches https://nodejs.org/api/crypto.html#cryptorandomfillsyncbuffer-offset-size
  * @param nowMs returns the current milliseconds since unix epoc
- * @param format formats the result buffer into a string; defaults to the hexFormatter
  */
 export const tuidFactoryCtor = (
   randomFillSync: (buffer: Buffer, offset: number, count: number) => void,
-  nowMs: () => number,
-  format: "hex" | "base64url" = "base64url",
+  nowMs: () => number
 ) => {
   let lastTime = 0n;
   return () => {
@@ -28,31 +26,28 @@ export const tuidFactoryCtor = (
     const buffer = Buffer.alloc(18);
     buffer.writeBigInt64BE(now, 0); // 8 bytes, of which we use 6 (48 bits)
     randomFillSync(buffer, 8, 10); // 10 bytes (80 bits)
-    return buffer.subarray(2, 18).toString(format);
+    return buffer.subarray(2, 18).toString("base64url");
   };
 }
 
-export const tuidEpochMilli = (tuid: string, format: "hex" | "base64url" | undefined = undefined) => {
+export const tuidEpochMilli = (tuid: string) => {
   const buffer = Buffer.alloc(18);
   buffer[0] = 0;
   buffer[1] = 0;
-  buffer.write(tuid, 2, format ?? "base64url");
+  buffer.write(tuid, 2, "base64url");
   const n = buffer.readBigInt64BE(0);
   return Number(n);
 };
 
-export const tuidForTestingFactoryCtor = (start = 0, format: "hex" | "base64url" | undefined = undefined) => {
+export const tuidForTestingFactoryCtor = (start = 0) => {
   let n = BigInt(start);
-  const fmt = format ?? "base64url";
   return () => {
     const buffer = Buffer.alloc(18);
     buffer.writeBigInt64BE(n, 0);
     n += 1n;
-    return buffer.subarray(2, 18).toString(fmt);
+    return buffer.subarray(2, 18).toString("base64url");
   };
 };
 
 // istanbul ignore next
-export const tuidZeroHex = '00000000000000000000000000000000';
-// istanbul ignore next
-export const tuidZeroBase64url = tuidHexToBase64url(tuidZeroHex);
+export const tuidZeroBase64url = tuidHexToBase64url('00000000000000000000000000000000');

@@ -1,6 +1,6 @@
 module.exports = {
   require: [
-    "source-map-support/register", "ts-node/register",
+    "source-map-support/register", "ts-node/register", "jsdom-global/register",
   ],
   "full-trace": true,
   bail: true,

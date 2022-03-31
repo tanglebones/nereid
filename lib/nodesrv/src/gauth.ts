@@ -1,8 +1,8 @@
 import {ctxBaseType, ctxType, gauthUserInfoType} from './server.type';
 import {secureTokenFactoryType} from "@nereid/nodecore";
 import {resolvedVoid} from "@nereid/anycore";
-import {toUrlParam} from "@nereid/anycore/dist/to_url_param";
-import {kvpArrayToObject} from "@nereid/anycore/dist/kvp_array_to_object";
+import {toUrlParam} from "@nereid/anycore";
+import {kvpArrayToObject} from "@nereid/anycore";
 
 export type gauthOnUserDataType = (ctx: ctxBaseType, gauthUserInfo: gauthUserInfoType, rawAuthResponse: string) => Promise<void>;
 export const gauthCtor = (

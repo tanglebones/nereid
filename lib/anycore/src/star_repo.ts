@@ -21,17 +21,20 @@ export type eventPacketType = {
 };
 
 export type starRepositoryServerType = {
+  localCommit: (name: string, params: serializableType) => serializableType;
   mergeCommit: (commitMessageFromClient: serializableType) => serializableType;
   readonly state: serializableType;
   readonly stateSignature: string;
+  readonly eventRegistrySignature: string;
 };
 
-export const starRepositoryServerFactory = (
+export const starRepositoryServerFactoryCtor = (tuidFactory: () => string) => (
   eventRegistry: Readonly<Record<string, stateModifierFunctionType>>,
   onError: (error: string, details: Record<string, unknown>) => void,
   initialState: serializableType
 ): starRepositoryServerType => {
   const eventRegistrySignature = signatureObjectKeys(eventRegistry);
+  const clientId = tuidFactory();
   let state: immutableSerializableType = produce(initialState, (x) => x);
   let stateSignature = '';
 
@@ -40,6 +43,33 @@ export const starRepositoryServerFactory = (
   };
 
   computeStateSignature();
+
+  const localCommit = (name: string, params: serializableType): serializableType => {
+    const stateModifier = eventRegistry[name];
+
+    if (!stateModifier) {
+      onError('NOT_IN_EVENT_REGISTRY', {name, local: true});
+      return;
+    }
+
+    const eventId = tuidFactory();
+    const event: eventType = {name, params};
+
+    state = produce(state, x => stateModifier(event.params, x));
+    const preMergeSignature = stateSignature;
+    computeStateSignature();
+    const postMergeSignature = stateSignature;
+
+
+    return {
+      event,
+      clientId,
+      eventId,
+      eventRegistrySignature,
+      preMergeSignature,
+      postMergeSignature,
+    }; // commitMessage to send to clients
+  };
 
   const mergeCommit = (commitMessageFromClient: serializableType) => {
     try {
@@ -82,6 +112,7 @@ export const starRepositoryServerFactory = (
   };
 
   return {
+    localCommit,
     mergeCommit,
     get state() {
       return state as serializableType;
@@ -89,6 +120,9 @@ export const starRepositoryServerFactory = (
     get stateSignature() {
       return stateSignature;
     },
+    get eventRegistrySignature() {
+      return eventRegistrySignature;
+    }
   };
 };
 
@@ -100,6 +134,7 @@ export type starRepositoryCloneType = {
   readonly localState: immutableSerializableType;
   serverState: immutableSerializableType;
   readonly serverStateSignature: string;
+  readonly eventRegistrySignature: string;
 };
 
 export const starRepositoryCloneFactoryCtor = (tuidFactory: () => string) => (
@@ -227,10 +262,10 @@ export const starRepositoryCloneFactoryCtor = (tuidFactory: () => string) => (
     get serverState() {
       return serverState as serializableType;
     },
-    set serverState(newState: serializableType){
+    set serverState(newState: serializableType) {
       localState = newState;
       localPendingEvents = {};
-      serverState = produce(newState, x=>x);
+      serverState = produce(newState, x => x);
       computeServerStateSignature();
     },
     get serverStateSignature() {
@@ -242,7 +277,11 @@ export const starRepositoryCloneFactoryCtor = (tuidFactory: () => string) => (
     get pendingCount() {
       return Object.keys(localPendingEvents).length;
     },
+    get eventRegistrySignature() {
+      return eventRegistrySignature;
+    }
   };
 };
 
+export type starRepositoryServerFactoryType = ReturnType<typeof starRepositoryServerFactoryCtor>;
 export type starRepositoryCloneFactoryType = ReturnType<typeof starRepositoryCloneFactoryCtor>;

@@ -1,0 +1,20 @@
+{
+  "name": "@nereid/creeper_client",
+  "version": "0.1.0",
+  "description": "",
+  "main": "dist/index.js",
+  "types": "./dist/index.d.ts",
+  "scripts": {
+    "test": "mocha",
+    "cover": "nyc mocha",
+    "clean": "rm -rf dist/*",
+    "build": "tsc"
+  },
+  "author": "",
+  "license": "MIT",
+  "dependencies": {
+    "@nereid/anycore": "*",
+    "@nereid/webcore": "*",
+    "@nereid/creeper": "*"
+  }
+}

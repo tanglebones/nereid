@@ -18,6 +18,6 @@
     "@nereid/nodecore": "*",
     "@nereid/nodesrv": "*",
     "@nereid/anycore": "*",
-    "@nereid/creeper": "*"
+    "@nereid/creeper_server": "*"
   }
 }

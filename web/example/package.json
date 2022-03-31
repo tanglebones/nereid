@@ -13,6 +13,6 @@
     "@nereid/anycore": "*",
     "@nereid/webcore": "*",
     "@nereid/webreactexample": "*",
-    "@nereid/creeper": "*"
+    "@nereid/creeper_client": "*"
   }
 }

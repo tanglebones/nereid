@@ -1,5 +1,5 @@
 import assert from "assert";
-import {tuidFactoryCtor} from "./tuid_factory";
+import {tuidFactoryCtor} from "./tuid";
 import {randomFillSync} from "crypto";
 import {DateTime} from "luxon";
 

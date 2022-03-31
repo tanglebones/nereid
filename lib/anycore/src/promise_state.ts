@@ -4,7 +4,7 @@ export interface PromiseState<T> extends Promise<T> {
   isResolved: boolean;
 }
 
-export const promiseStateCtor = <T>(promise: Promise<T>) => {
+export const promiseStateWrapper = <T>(promise: Promise<T>) => {
   let isPending = true;
   let isRejected = false;
   let isResolved = false;

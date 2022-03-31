@@ -8,10 +8,14 @@ describe("creeperEventRegistry", () => {
     const creeperEventRegistry = creeperEventRegistryCtor(nowMs);
 
     const state = produce({}, x => x);
-    const s1 = produce(state, x => creeperEventRegistry['updateV0']({login_id: '123', name: 'bob', location: '/'}, x));
+    const s1 = produce(state, x => creeperEventRegistry['updateV0']({loginId: '123', name: 'bob', location: '/'}, x));
+    assert.deepStrictEqual(produce(state, x => creeperEventRegistry['updateV0']({
+      name: 'bob',
+      location: '/ignored'
+    }, x)), {});
 
     assert.deepStrictEqual(produce({'123': {name: 'bob', 'location': '/', lastSeen: 123}}, x => x), s1);
-    const s2 = produce(s1, x => creeperEventRegistry['updateV0']({login_id: '123'}, x));
+    const s2 = produce(s1, x => creeperEventRegistry['updateV0']({loginId: '123'}, x));
 
     assert.deepStrictEqual(produce({}, x => x), s2);
   });

@@ -1,6 +1,6 @@
 import {secureTokenFactoryCtor} from './stoken';
 import assert from 'assert';
-import {stuidForTestingFactoryCtor, stuidZeroHex} from "./stuid";
+import {stuidForTestingFactoryCtor, stuidZeroBase64url} from "./stuid";
 
 describe('stoken', () => {
   const secureTokenFactory = secureTokenFactoryCtor("aoeu", stuidForTestingFactoryCtor());
@@ -14,6 +14,6 @@ describe('stoken', () => {
 
   it('invalid', () => {
     assert(!secureTokenFactory.verify(undefined));
-    assert(!secureTokenFactory.verify(stuidZeroHex));
+    assert(!secureTokenFactory.verify(stuidZeroBase64url));
   });
 });

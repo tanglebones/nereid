@@ -15,8 +15,7 @@ export const stuidBase64urlToHex = (s: string) => Buffer.from(s, "base64url").to
  */
 export const stuidFactoryCtor = (
   randomFillSync: (buffer: Buffer, offset: number, count: number) => void,
-  nowMs: () => number,
-  format: "hex" | "base64url" = "hex",
+  nowMs: () => number
 ) => {
   let lastTime = 0n;
   return () => {
@@ -28,31 +27,28 @@ export const stuidFactoryCtor = (
     const buffer = Buffer.alloc(34, 0);
     buffer.writeBigInt64BE(now, 0); // 8 bytes, of which we use 6 (48 bits)
     randomFillSync(buffer, 8, 26); // 26 bytes (208 bits)
-    return buffer.subarray(2, 34).toString(format);
+    return buffer.subarray(2, 34).toString('base64url');
   };
 }
 
-export const stuidEpochMilli = (tuid: string, format: "hex" | "base64url" | undefined = undefined) => {
+export const stuidEpochMilli = (tuid: string) => {
   const buffer = Buffer.alloc(34, 0);
   buffer[0] = 0;
   buffer[1] = 0;
-  buffer.write(tuid, 2, format ?? "hex");
+  buffer.write(tuid, 2, "base64url");
   const n = buffer.readBigInt64BE(0);
   return Number(n);
 };
 
-export const stuidForTestingFactoryCtor = (start = 0, format: "hex" | "base64url" | undefined = undefined) => {
+export const stuidForTestingFactoryCtor = (start = 0) => {
   let n = BigInt(start);
-  const fmt = format ?? "hex";
   return () => {
     const buffer = Buffer.alloc(36, 0);
     buffer.writeBigInt64BE(n, 0);
     n += 1n;
-    return buffer.subarray(2, 34).toString(fmt);
+    return buffer.subarray(2, 34).toString("base64url");
   };
 };
 
 // istanbul ignore next
-export const stuidZeroHex = '0000000000000000000000000000000000000000000000000000000000000000';
-// istanbul ignore next
-export const stuidZeroBase64url =stuidHexToBase64url(stuidZeroHex);
+export const stuidZeroBase64url = stuidHexToBase64url('0000000000000000000000000000000000000000000000000000000000000000');

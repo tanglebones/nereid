@@ -2,9 +2,10 @@ import {createHash, createHmac} from 'crypto';
 import bcrypt from 'bcryptjs';
 import {stuidEpochMilli} from "./stuid";
 import {bufferXor} from "./buffer_xor";
+import {secureTokenFactoryType} from "./stoken";
 
 export const crCtor = (
-  secureToken: { create: () => string, verify: (stoken: string) => string | undefined },
+  secureToken: secureTokenFactoryType,
   nowMs: () => number,
   randomBytes: (n: number) => Buffer
 ) => {

@@ -2,16 +2,14 @@ import {echo} from './echo';
 import {userInfo} from './user_info';
 import {resolvedUndefined, serializableType} from "@nereid/anycore";
 import {ctxWebSocketType, webSocketHandlerType} from "@nereid/nodesrv";
-import {creeperType} from "./creeper";
+import {wsCreeperServerHandlerRegistry} from "@nereid/creeper_server";
 
-export const wsHandlerRegistryCtor = ({creeper}: { creeper: creeperType }) => {
-  return {
+export const wsHandlerRegistry = {
     'echo': echo,
     'user.info': userInfo,
-    'creeper.commit': creeper.wsCommit,
-    'creeper.getState': creeper.wsGetState,
+    ...wsCreeperServerHandlerRegistry
   } as Record<string, webSocketHandlerType>;
-};
+
 
 export const wsOnConnectHandler = async (ctxWs: ctxWebSocketType): Promise<serializableType> => {
   console.log(`wsOnConnect: ${ctxWs?.user?.login || ctxWs.sessionId || 'wtf?'}`);

@@ -1,0 +1,23 @@
+{
+  "name": "@nereid/creeper_server",
+  "version": "0.1.0",
+  "description": "",
+  "main": "dist/index.js",
+  "types": "./dist/index.d.ts",
+  "scripts": {
+    "build": "tsc",
+    "test": "mocha",
+    "cover": "nyc mocha",
+    "clean": "rm -rf dist/* && rm tsconfig.tsbuildinfo",
+    "lint": "eslint src --ext .js,.jsx,.ts,.tsx",
+    "doc": "npx typedoc src/*.ts src/**/*.ts --out dist/doc"
+  },
+  "author": "",
+  "license": "MIT",
+  "dependencies": {
+    "@nereid/nodecore": "*",
+    "@nereid/nodesrv": "*",
+    "@nereid/anycore": "*",
+    "@nereid/creeper": "*"
+  }
+}

@@ -1,8 +1,8 @@
 import sinon from "sinon";
 import {counterCtor} from "./counter";
-import {actionsType} from "./r.type";
 import assert from "assert";
 import React from "react";
+import {actionsType} from "@nereid/webreactcore";
 
 describe("counter", () => {
   const getSut = () => {

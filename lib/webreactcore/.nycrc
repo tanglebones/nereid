@@ -1,0 +1,31 @@
+{
+  "require": [
+    "ts-node/register",
+    "source-map-support/register"
+  ],
+  "cache": false,
+  "extension": [ ".ts", ".tsx" ],
+  "include": [
+    "src/**/*.ts",
+    "src/**/*.tsx"
+  ],
+  "exclude": [
+    "**/*.test.ts",
+    "**/*.type.ts",
+    "**/*.provider.ts","**/*.default.ts",
+    "**/bootstrap.ts",
+    "src/index.tsx"
+  ],
+  "check-coverage": true,
+  "statements": 100,
+  "branches": 100,
+  "lines": 100,
+  "functions": 100,
+  "sourceMap": true,
+  "instrument": true,
+  "reporter": [
+    "text-summary",
+    "html"
+  ],
+  "all": true
+}

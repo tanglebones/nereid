@@ -1,19 +1,19 @@
 import React from 'react';
-import {actionsType, reactType} from "./r.type";
+import {actionsType, exportActions, reactType} from "@nereid/webreactcore";
 
 export const counterCtor = (React: reactType) =>
   (actions?: actionsType) => {
     const [count, setCount] = React.useState(0);
 
-    actions = Object.assign(actions ?? {}, {
-      onClick() {
-        setCount(count + 1);
-      }
-    });
+    const onClick = () => {
+      setCount(count + 1);
+    };
+
+    exportActions(actions, {onClick});
 
     return <div>
       <p>You clicked {count} times</p>
-      <button onClick={actions.onClick}>
+      <button onClick={onClick}>
         Click me
       </button>
     </div>

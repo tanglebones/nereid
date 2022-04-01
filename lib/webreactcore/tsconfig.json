@@ -1,0 +1,31 @@
+{
+  "extends": "../../cfg/cfg_ts/tsconfig.json",
+  "include": [
+    "src/**/*.ts",
+    "src/**/*.tsx"
+  ],
+  "compilerOptions": {
+    "target": "es5",
+    "outDir": "dist",
+    "rootDir": "src",
+    "lib": [
+      "dom",
+      "es2020"
+    ],
+    "jsx": "react",
+    "baseUrl": "./src"
+  },
+  "exclude": [
+    "dist",
+    "build",
+    "node_modules"
+  ],
+  "references": [
+    {
+      "path": "../../lib/webcore"
+    },
+    {
+      "path": "../../lib/anycore"
+    }
+  ]
+}

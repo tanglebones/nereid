@@ -1,5 +1,5 @@
 import {ctxWebSocketType, webSocketHandlerType} from '@nereid/nodesrv';
-import {serializableType, starRepositoryServerFactoryType, stateModifierFunctionType} from '@nereid/anycore';
+import {nowMs, serializableType, starRepositoryServerFactoryType, stateModifierFunctionType} from '@nereid/anycore';
 import WebSocket from "ws";
 import {starRepositoryServerFactory} from "@nereid/nodecore";
 import {creeperEventRegistry} from "@nereid/creeper";
@@ -27,7 +27,10 @@ export const creeperServerCtor = (starRepositoryServerFactory: starRepositorySer
 
   const wsGetState = async (ctxWs: ctxWebSocketType, _params: serializableType): Promise<serializableType> => {
     subscribeToCommits(ctxWs);
-    return {state: repo.state};
+    return {
+      state: repo.state,
+      stateSignature: repo.stateSignature
+    };
   };
 
   const sendCommits = async (msg: serializableType) => {
@@ -42,20 +45,27 @@ export const creeperServerCtor = (starRepositoryServerFactory: starRepositorySer
     }));
 
     for (const loginId of toRemove) {
-      const msg = repo.localCommit('updateV0', {loginId});
-      await sendCommits(msg);
+      const s = repo.state as Record<string, unknown>;
+      if (s[loginId]) {
+        const msg = repo.localCommit('updateV0', {loginId});
+        // console.log({state: repo.state, stateSignature: repo.stateSignature});
+        await sendCommits(msg);
+      }
     }
   };
 
   const wsCommit = async (ctxWs: ctxWebSocketType, params: serializableType): Promise<serializableType> => {
-    const p = params as { event?: { loginId?: string } };
-    if (!p.event) {
+    const p = params as { event?: { params?: { loginId?: string, lastSeen?: number } } };
+    if (!p.event?.params) {
       return false;
     }
 
-    p.event.loginId = ctxWs.user?.loginId ?? ctxWs.sessionId;
+    p.event.params.loginId = ctxWs.user?.loginId ?? ctxWs.sessionId;
+    p.event.params.lastSeen = nowMs();
 
     const msg = repo.mergeCommit(params);
+
+    // console.log({state: repo.state, stateSignature: repo.stateSignature});
 
     subscribeToCommits(ctxWs);
     await sendCommits(msg);

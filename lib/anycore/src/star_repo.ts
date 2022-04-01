@@ -60,7 +60,6 @@ export const starRepositoryServerFactoryCtor = (tuidFactory: () => string) => (
     computeStateSignature();
     const postMergeSignature = stateSignature;
 
-
     return {
       event,
       clientId,

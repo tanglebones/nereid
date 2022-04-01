@@ -20,3 +20,4 @@ export const creeperClientCtor = (starRepositoryCloneFactory: starRepositoryClon
   return {wsRebase, wsSetState, repo};
 }
 
+export type creeperClientType = ReturnType<typeof creeperClientCtor>;

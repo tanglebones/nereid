@@ -17,4 +17,6 @@ function finish {
 trap finish EXIT
 
 killemall
+
+echo "Starting nginx"
 npm run run

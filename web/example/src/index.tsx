@@ -1,9 +1,10 @@
 import React from 'react';
 import {createRoot} from 'react-dom/client';
-import {Counter} from "@nereid/webreactexample";
+
 import {tuidFactory, webSocketFactoryCtor, webSocketHandlerType} from "@nereid/webcore";
 import {echo} from "./web_socket/echo";
 import {creeperClient, wsCreeperClientHandlerRegistry} from "@nereid/creeper_client";
+import {Frame} from "./frame";
 
 const wsHostName = (subdomain: string) => {
   const hostParts = window.location.hostname.split('.').reverse();
@@ -21,13 +22,8 @@ const webSocket = webSocketFactory(
   webSocketHandlerRegistry,
 );
 
-const Application = () => (
-  <div>
-    <h1>Application</h1>
-    <Counter/>
-  </div>
-);
 
+// temp code to test ws connection
 (async () => {
   console.log(await webSocket.call('echo', {test: 1}));
   const repo = creeperClient.repo;
@@ -41,4 +37,4 @@ const Application = () => (
 })().catch(console.error);
 
 const root = createRoot(document.getElementById('root') as Element);
-root.render(<Application/>);
+root.render(<Frame/>);

@@ -5,7 +5,8 @@
   "source": "src/index.html",
   "scripts": {
     "clean": "rm -rf dist/*",
-    "build": "parcel build src/index.html"
+    "build": "parcel build src/index.html",
+    "watch": "parcel watch src/index.html"
   },
   "author": "",
   "license": "MIT",

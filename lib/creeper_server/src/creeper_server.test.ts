@@ -17,7 +17,7 @@ describe("creeperServer", () => {
     } as Readonly<Record<string, stateModifierFunctionType>>;
 
     // starRepositoryServerFactory could be stubbed to avoid some of the complexity?
-    const creeperServer = creeperServerCtor(starRepositoryServerFactory, creeperEventRegistry);
+    const creeperServer = creeperServerCtor(() => 1555, starRepositoryServerFactory, creeperEventRegistry);
     const call1 = sinon.stub();
     call1.resolves(true);
     const call2 = sinon.stub();
@@ -28,14 +28,14 @@ describe("creeperServer", () => {
     const wsCtx1: any = {sessionId: "1", ws: {readyState: WebSocket.OPEN, close: sinon.stub()}, call: call1};
     const wsCtx2: any = {sessionId: "2", ws: {readyState: WebSocket.OPEN, close: sinon.stub()}, call: call2};
     const wsCtx3: any = {sessionId: "1", ws: {readyState: WebSocket.OPEN, close: sinon.stub()}, call: call3};
-    assert.deepStrictEqual(await creeperServer.wsGetState(wsCtx1, {}), {state: {}});
+    assert.deepStrictEqual(await creeperServer.wsGetState(wsCtx1, {}), {state: {}, stateSignature: "2e1472b57af294d1"});
     assert.strictEqual(creeperServer.ctxWsSubs["1"], wsCtx1);
-    assert.deepStrictEqual(await creeperServer.wsGetState(wsCtx2, {}), {state: {}});
+    assert.deepStrictEqual(await creeperServer.wsGetState(wsCtx2, {}), {state: {}, stateSignature: "2e1472b57af294d1"});
     assert.strictEqual(creeperServer.ctxWsSubs["2"], wsCtx2);
     const params1 = {
       "event": {
         "name": "updateV0",
-        "params": {"name": "bob", "location": "/home", "lastSeen": 1648684406534}
+        "params": {"name": "bob", "location": "/home"}
       },
       "clientId": "AX_dP5bYsKdZdh5PWO1nRQ",
       "eventId": "AX_dP5cGQZn0B1sRtsPseQ",
@@ -46,14 +46,13 @@ describe("creeperServer", () => {
     const event1 = {
       event: {
         name: 'updateV0',
-        params: {name: 'bob', location: '/home', lastSeen: 1648684406534},
-        loginId: '1'
+        params: {name: 'bob', location: '/home', loginId: '1', lastSeen: 1555},
       },
       clientId: 'AX_dP5bYsKdZdh5PWO1nRQ',
       eventId: 'AX_dP5cGQZn0B1sRtsPseQ',
       eventRegistrySignature: '63ec5bfb86cbb908',
       preMergeSignature: '2e1472b57af294d1',
-      postMergeSignature: 'a4a165eb8f5a7ad1'
+      postMergeSignature: 'c74d087bb9d4677f'
     };
     sinon.assert.calledWithExactly(call1, "creeper.rebase", event1);
     sinon.assert.calledWithExactly(call2, "creeper.rebase", event1);
@@ -67,18 +66,20 @@ describe("creeperServer", () => {
     assert.deepStrictEqual(await creeperServer.wsGetState(wsCtx3, {}), {
       state: {
         "1": {
-          "lastSeen": 1648684406534,
+          "lastSeen": 1555,
           "location": "/home",
-          "name": "bob"
+          "name": "bob",
+          "loginId":"1"
         }
-      }
+      },
+      stateSignature: 'c74d087bb9d4677f'
     });
     assert.strictEqual(creeperServer.ctxWsSubs["1"], wsCtx3);
 
     const params2 = {
       "event": {
         "name": "updateV0",
-        "params": {"name": "bob", "location": "/", "lastSeen": 1648684406534}
+        "params": {"name": "bob", "location": "/", "lastSeen": 1555, "loginId": "1"}
       },
       "clientId": "AX_dP5bYsKdZdh5PWO1nRQ",
       "eventId": "AX_dP5cGQZn0B1sRtsPseZ",
@@ -88,14 +89,13 @@ describe("creeperServer", () => {
     const event2 = {
       event: {
         name: 'updateV0',
-        params: {name: 'bob', location: '/', lastSeen: 1648684406534},
-        loginId: '1'
+        params: {name: 'bob', location: '/', lastSeen: 1555, loginId: '1'},
       },
       clientId: 'AX_dP5bYsKdZdh5PWO1nRQ',
       eventId: 'AX_dP5cGQZn0B1sRtsPseZ',
       eventRegistrySignature: '63ec5bfb86cbb908',
-      preMergeSignature: 'a4a165eb8f5a7ad1',
-      postMergeSignature: '3238f2ecb4af89ec'
+      preMergeSignature: 'c74d087bb9d4677f',
+      postMergeSignature: '026a4a4f53b39140'
     };
     sinon.assert.notCalled(call1);
     sinon.assert.notCalled(call2);

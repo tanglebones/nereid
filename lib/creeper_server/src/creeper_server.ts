@@ -1,10 +1,12 @@
-import {ctxWebSocketType, webSocketHandlerType} from '@nereid/nodesrv';
-import {nowMs, serializableType, starRepositoryServerFactoryType, stateModifierFunctionType} from '@nereid/anycore';
+import {ctxWebSocketType} from '@nereid/nodesrv';
+import {serializableType, starRepositoryServerFactoryType, stateModifierFunctionType} from '@nereid/anycore';
 import WebSocket from "ws";
-import {starRepositoryServerFactory} from "@nereid/nodecore";
-import {creeperEventRegistry} from "@nereid/creeper";
 
-export const creeperServerCtor = (starRepositoryServerFactory: starRepositoryServerFactoryType, creeperEventRegistry: Readonly<Record<string, stateModifierFunctionType>>) => {
+export const creeperServerCtor = (
+  nowMs: () => number,
+  starRepositoryServerFactory: starRepositoryServerFactoryType,
+  creeperEventRegistry: Readonly<Record<string, stateModifierFunctionType>>,
+  ) => {
   const repo = starRepositoryServerFactory(
     creeperEventRegistry,
     console.error,
@@ -46,6 +48,7 @@ export const creeperServerCtor = (starRepositoryServerFactory: starRepositorySer
 
     for (const loginId of toRemove) {
       const s = repo.state as Record<string, unknown>;
+      // istanbul ignore else -- hard to setup a test for this...
       if (s[loginId]) {
         const msg = repo.localCommit('updateV0', {loginId});
         // console.log({state: repo.state, stateSignature: repo.stateSignature});
@@ -76,9 +79,3 @@ export const creeperServerCtor = (starRepositoryServerFactory: starRepositorySer
   return {wsGetState, wsCommit, repo, ctxWsSubs};
 };
 
-export const creeperServer = creeperServerCtor(starRepositoryServerFactory, creeperEventRegistry);
-
-export const wsCreeperServerHandlerRegistry = {
-  'creeper.commit': creeperServer.wsCommit,
-  'creeper.getState': creeperServer.wsGetState,
-} as Record<string, webSocketHandlerType>;

@@ -51,7 +51,7 @@ export type requestType = {
 
 export type ctxWebSocketType = ctxBaseType & {
   ws: webSocketExtendedType,
-  call(name: string, params: serializableType): Promise<serializableType>,
+  call(module: string, name: string, args: serializableType): Promise<serializableType>,
   requests: Record<string, requestType>,
 }
 
@@ -85,8 +85,23 @@ export type serverSettingsType = {
     expirySeconds?: number,
     expiryIntervalMs?: number,
     cookieName?: string,
-  }
+  },
+  webSocket?: { enabled: boolean },
   [key: string]: serializableType,
 };
 
 export type webSocketHandlerType = (ctxWs: ctxWebSocketType, callParams: serializableType | undefined) => Promise<serializableType | undefined>;
+
+export type webSocketModuleType = {
+  name: string,
+  mode: 'server',
+  calls: Readonly<Record<string, webSocketHandlerType>>
+};
+
+export type webSocketRpcType = {
+  addModule: (module: webSocketModuleType) => void,
+  onConnect: (callback: (ctxWs: ctxWebSocketType) => Promise<void>) => () => void,
+  onClose: (callback: (ctxWs: ctxWebSocketType) => Promise<void>) => () => void,
+  call: (ctxWs: ctxWebSocketType, module: string, method: string, args: serializableType) => Promise<serializableType | undefined>,
+  webSocketServer: WebSocket.Server,
+};

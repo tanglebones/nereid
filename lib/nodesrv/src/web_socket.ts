@@ -1,5 +1,5 @@
 // istanbul ignore file
-// -- bootstrap
+// -- bootstrap & still in flux
 
 import {
   ctxReqType,
@@ -7,8 +7,10 @@ import {
   reqHandlerType,
   serverSettingsType,
   webSocketExtendedType,
-  webSocketHandlerType,
+  webSocketModuleType,
+  webSocketRpcType,
 } from './server.type';
+
 import {IncomingMessage, Server} from 'http';
 import WebSocket from 'ws';
 import {Socket} from 'net';
@@ -16,22 +18,19 @@ import {ctxReqCtor} from './ctx';
 import {serializableType, serialize} from "@nereid/anycore";
 import {dbProviderType} from "./db/db_provider.type";
 import {sessionUpdate} from "./db/db_session";
-
-export type webSocketType = {
-  wss: WebSocket.Server,
-  call(ctxWebSocket: ctxWebSocketType, callName: string, params: serializableType): Promise<serializableType>,
-};
+import {pubSubCtor} from "@nereid/nodecore";
 
 export const webSocketInit = (
-  webSocketHandlerRegistry: Readonly<Record<string, webSocketHandlerType>>,
   server: Server,
   settings: serverSettingsType,
   sessionInit: reqHandlerType | undefined,
   dbProvider: dbProviderType,
   tuidFactory: () => string,
-  onConnectHandler?: (ctxWs: ctxWebSocketType) => Promise<serializableType>,
-  onCloseHandler?: (ctxWs: ctxWebSocketType) => Promise<serializableType>,
-) => {
+): webSocketRpcType => {
+  const onConnectPubSub = pubSubCtor<ctxWebSocketType>();
+  const onClosePubSub = pubSubCtor<ctxWebSocketType>();
+  const modules = {} as Record<string, webSocketModuleType>
+
   const webSocketServer = new WebSocket.Server({
     noServer: true,
     backlog: 32,
@@ -45,6 +44,7 @@ export const webSocketInit = (
     try {
       const packet: {
         id?: string;
+        m?: string; // module
         n?: string; // name
         a?: serializableType, // args
         s?: string, // state
@@ -52,9 +52,9 @@ export const webSocketInit = (
         r?: serializableType // result
       } = JSON.parse(data.toString('utf8'));
       const state = packet.s?.[0];
-      if (packet.id && packet.n && state === '?') {
+      if (packet.id && packet.m && packet.n && state === '?') {
         try {
-          const call = webSocketHandlerRegistry[packet.n];
+          const call = modules[packet.m]?.calls[packet.n];
           if (call) {
             const r = await call(ctxWs, packet.a);
             if (ctxWs.settings.session?.enabled) {
@@ -116,12 +116,12 @@ export const webSocketInit = (
 
   const ctxWsRegistry = {} as Record<string, ctxWebSocketType>;
 
-  const onClose = async (ctxWs: ctxWebSocketType) => {
+  const onCloseEvent = async (ctxWs: ctxWebSocketType) => {
     const removed = ctxWsRegistry[ctxWs.sessionId];
     delete ctxWsRegistry[ctxWs.sessionId];
     if (removed) {
       try {
-        await onCloseHandler?.(ctxWs);
+        await onClosePubSub.pub(ctxWs);
       } catch (e) {
         console.error('onClose exception:', e);
       }
@@ -142,10 +142,10 @@ export const webSocketInit = (
       return;
     }
     ctxWs.ws.isAlive = true;
-    ctxWs.ws.on('close', () => onClose(ctxWs));
+    ctxWs.ws.on('close', () => onCloseEvent(ctxWs));
     ctxWs.ws.on('pong', () => heartbeat(ctxWs));
     try {
-      await onConnectHandler?.(ctxWs);
+      await onConnectPubSub.pub(ctxWs);
     } catch (e) {
       console.error('onConnect exception:', e);
     }
@@ -165,11 +165,11 @@ export const webSocketInit = (
     });
   };
 
-  const call = (ctxWs: ctxWebSocketType, callName: string, params: serializableType) =>
+  const call = (ctxWs: ctxWebSocketType, module: string, name: string, args: serializableType) =>
     new Promise<serializableType>(
       (resolve, reject) => {
         const id = tuidFactory();
-        const data = JSON.stringify({id, n: callName, a: params, s: '?'});
+        const data = JSON.stringify({id, m: module, n: name, a: args, s: '?'});
         ctxWs.requests[id] = {
           ctxWs,
           id,
@@ -241,8 +241,8 @@ export const webSocketInit = (
             dbProvider: ctx.dbProvider,
             permission: ctx.permission,
             requests: {},
-            call(name: string, params: serializableType): Promise<serializableType> {
-              return call(ctxWs, name, params);
+            call(module: string, name: string, args: serializableType): Promise<serializableType> {
+              return call(ctxWs, module, name, args);
             },
             settings,
           };
@@ -250,7 +250,7 @@ export const webSocketInit = (
           // sessions can't be shared
           const existingConnection = ctxWsRegistry[ctxWs.sessionId];
           if (existingConnection) {
-            onClose(existingConnection);
+            onCloseEvent(existingConnection);
             ctxWs.ws.close();
             delete ctxWsRegistry[ctxWs.sessionId];
           }
@@ -267,5 +267,17 @@ export const webSocketInit = (
     }
   });
 
-  return {wss: webSocketServer, call};
+  const addModule = (module: webSocketModuleType) => {
+    if (modules.hasOwnProperty(module.name)) {
+      throw new Error(`Module ${module.name} already added.`);
+    }
+    if (module.mode !== 'server') {
+      throw new Error(`Module ${module.name} is not a server module.`);
+    }
+    modules[module.name] = module;
+  };
+  const onConnect = (callback: (ctxWs: ctxWebSocketType) => Promise<void>) => onConnectPubSub.sub(callback);
+  const onClose = (callback: (ctxWs: ctxWebSocketType) => Promise<void>) => onClosePubSub.sub(callback);
+
+  return {webSocketServer, call, addModule, onClose, onConnect};
 };

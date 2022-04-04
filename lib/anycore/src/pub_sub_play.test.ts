@@ -9,7 +9,7 @@ const pubSubPlayCtor = pubSubPlayCtorCtor(tuidFactory);
 
 describe('pubSubPlay', () => {
   it('basics', async () => {
-    const psp = pubSubPlayCtor();
+    const psp = pubSubPlayCtor<string>();
     const m1: string[] = [];
     const m2: string[] = [];
     psp.sub(async message => { m1.push(message) });

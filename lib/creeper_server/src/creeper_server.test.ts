@@ -1,11 +1,11 @@
-import {creeperServerCtor} from "./index";
+import {creeperServerCtorCtor} from "./index";
 import {starRepositoryServerFactory} from "@nereid/nodecore";
 import assert from "assert";
 import WebSocket from "ws";
 import sinon from "sinon";
 import {serializableType, stateModifierFunctionType} from "@nereid/anycore";
 import {Draft} from "immer";
-
+import {webSocketModuleType} from "@nereid/nodesrv";
 
 describe("creeperServer", () => {
   it("basics", async () => {
@@ -17,7 +17,16 @@ describe("creeperServer", () => {
     } as Readonly<Record<string, stateModifierFunctionType>>;
 
     // starRepositoryServerFactory could be stubbed to avoid some of the complexity?
-    const creeperServer = creeperServerCtor(() => 1555, starRepositoryServerFactory, creeperEventRegistry);
+    const creeperServerCtor = creeperServerCtorCtor(
+      () => 1555,
+      starRepositoryServerFactory,
+      creeperEventRegistry
+    );
+
+    let module: webSocketModuleType | undefined;
+    const creeperServer = creeperServerCtor({addModule: (m: webSocketModuleType) => module = m} as any);
+    assert(module);
+
     const call1 = sinon.stub();
     call1.resolves(true);
     const call2 = sinon.stub();
@@ -28,10 +37,10 @@ describe("creeperServer", () => {
     const wsCtx1: any = {sessionId: "1", ws: {readyState: WebSocket.OPEN, close: sinon.stub()}, call: call1};
     const wsCtx2: any = {sessionId: "2", ws: {readyState: WebSocket.OPEN, close: sinon.stub()}, call: call2};
     const wsCtx3: any = {sessionId: "1", ws: {readyState: WebSocket.OPEN, close: sinon.stub()}, call: call3};
-    assert.deepStrictEqual(await creeperServer.wsGetState(wsCtx1, {}), {state: {}, stateSignature: "2e1472b57af294d1"});
-    assert.strictEqual(creeperServer.ctxWsSubs["1"], wsCtx1);
-    assert.deepStrictEqual(await creeperServer.wsGetState(wsCtx2, {}), {state: {}, stateSignature: "2e1472b57af294d1"});
-    assert.strictEqual(creeperServer.ctxWsSubs["2"], wsCtx2);
+    assert.deepStrictEqual(await module.calls.getState(wsCtx1, {}), {state: {}, stateSignature: "2e1472b57af294d1"});
+    assert.strictEqual(creeperServer._.ctxWsSubs["1"], wsCtx1);
+    assert.deepStrictEqual(await module.calls.getState(wsCtx2, {}), {state: {}, stateSignature: "2e1472b57af294d1"});
+    assert.strictEqual(creeperServer._.ctxWsSubs["2"], wsCtx2);
     const params1 = {
       "event": {
         "name": "updateV0",
@@ -41,7 +50,7 @@ describe("creeperServer", () => {
       "eventId": "AX_dP5cGQZn0B1sRtsPseQ",
       "eventRegistrySignature": creeperServer.repo.eventRegistrySignature
     };
-    assert.deepStrictEqual(await creeperServer.wsCommit(wsCtx1, params1), true);
+    assert.deepStrictEqual(await module.calls.commit(wsCtx1, params1), true);
 
     const event1 = {
       event: {
@@ -54,8 +63,8 @@ describe("creeperServer", () => {
       preMergeSignature: '2e1472b57af294d1',
       postMergeSignature: 'c74d087bb9d4677f'
     };
-    sinon.assert.calledWithExactly(call1, "creeper.rebase", event1);
-    sinon.assert.calledWithExactly(call2, "creeper.rebase", event1);
+    sinon.assert.calledWithExactly(call1, "creeper", "rebase", event1);
+    sinon.assert.calledWithExactly(call2, "creeper", "rebase", event1);
     sinon.assert.notCalled(call3);
 
     call1.reset();
@@ -63,18 +72,18 @@ describe("creeperServer", () => {
     call2.resolves(true);
 
     wsCtx2.ws.readyState = WebSocket.CLOSING;
-    assert.deepStrictEqual(await creeperServer.wsGetState(wsCtx3, {}), {
+    assert.deepStrictEqual(await module.calls.getState(wsCtx3, {}), {
       state: {
         "1": {
           "lastSeen": 1555,
           "location": "/home",
           "name": "bob",
-          "loginId":"1"
+          "loginId": "1"
         }
       },
       stateSignature: 'c74d087bb9d4677f'
     });
-    assert.strictEqual(creeperServer.ctxWsSubs["1"], wsCtx3);
+    assert.strictEqual(creeperServer._.ctxWsSubs["1"], wsCtx3);
 
     const params2 = {
       "event": {
@@ -85,7 +94,7 @@ describe("creeperServer", () => {
       "eventId": "AX_dP5cGQZn0B1sRtsPseZ",
       "eventRegistrySignature": creeperServer.repo.eventRegistrySignature
     };
-    assert.deepStrictEqual(await creeperServer.wsCommit(wsCtx3, params2), true);
+    assert.deepStrictEqual(await module.calls.commit(wsCtx3, params2), true);
     const event2 = {
       event: {
         name: 'updateV0',
@@ -99,10 +108,10 @@ describe("creeperServer", () => {
     };
     sinon.assert.notCalled(call1);
     sinon.assert.notCalled(call2);
-    sinon.assert.calledWithExactly(call3, "creeper.rebase", event2)
-    assert.strictEqual(creeperServer.ctxWsSubs["1"], wsCtx3);
-    assert.strictEqual(creeperServer.ctxWsSubs["2"], undefined);
+    sinon.assert.calledWithExactly(call3, "creeper","rebase", event2)
+    assert.strictEqual(creeperServer._.ctxWsSubs["1"], wsCtx3);
+    assert.strictEqual(creeperServer._.ctxWsSubs["2"], undefined);
 
-    assert.strictEqual(await creeperServer.wsCommit(wsCtx2, {}), false);
+    assert.strictEqual(await module.calls.commit(wsCtx2, {}), false);
   });
 });

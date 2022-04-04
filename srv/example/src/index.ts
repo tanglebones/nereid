@@ -1,11 +1,17 @@
-import {contentHandlerType, dbProviderCtor, exitCtor, serverFactoryCtor, serverSettingsType} from "@nereid/nodesrv";
+import {
+  contentHandlerType,
+  dbProviderCtor,
+  exitCtor,
+  serverFactoryCtor,
+  serverSettingsType
+} from "@nereid/nodesrv";
 import {main} from "@nereid/nodemain";
 import {helloHandler} from "./hello_handler";
-import {wsHandlerRegistry, wsOnCloseHandler, wsOnConnectHandler} from "./web_socket";
 import {clearInterval} from "timers";
 import {createServer} from "http";
 import {eventLoopHealthMonitorCtor, tuidFactory} from "@nereid/nodecore";
 import {cancellationTokenFactory, nowMs} from "@nereid/anycore";
+import {creeperServerCtor} from "@nereid/creeper_server";
 
 const portMapping = require("../port_mapping.json");
 
@@ -29,7 +35,7 @@ eventLoopHealthMonitorCtor(
 );
 
 const exit = exitCtor(process, cancellationTokenFactory);
-const appDbProvider = dbProviderCtor({connectionString: appConnectionString, application_name: 'ep_app'});
+const appDbProvider = dbProviderCtor({connectionString: appConnectionString, application_name: 'eg_app'});
 const serverFactory = serverFactoryCtor(createServer, setInterval, tuidFactory);
 
 main(async () => {
@@ -39,6 +45,7 @@ main(async () => {
     host: '127.0.0.1',
     schema: 'http',
     appUrl: 'http://api.example.xxx',
+    webSocket: {enabled: true}
     // session: {
     //   enabled: true,
     //   cookieName: 'AX-3qDKkQMKHQHwswIWNvw',
@@ -49,14 +56,17 @@ main(async () => {
 
   const appHandlerArray = [helloHandler] as contentHandlerType[];
 
-  serverFactory(
+  const {webSocketRpc} = serverFactory(
     appDbProvider,
     appSettings,
     appHandlerArray,
-    wsHandlerRegistry,
-    wsOnConnectHandler,
-    wsOnCloseHandler,
   );
+
+  if(!webSocketRpc){
+    throw new Error("expected webSocketRpc to be defined!");
+  }
+
+  creeperServerCtor(webSocketRpc);
 
   await exit.exitPromise;
 });

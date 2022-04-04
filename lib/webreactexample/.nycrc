@@ -12,7 +12,9 @@
   "exclude": [
     "**/*.test.ts",
     "**/*.type.ts",
-    "**/*.provider.ts","**/*.default.ts",
+    "**/*.provider.ts",
+    "**/*.default.ts",
+    "**/*.default.tsx",
     "**/bootstrap.ts",
     "src/index.tsx"
   ],

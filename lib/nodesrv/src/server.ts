@@ -4,10 +4,10 @@
 
 import {
   contentHandlerType,
-  ctxType, ctxWebSocketType,
+  ctxType,
   reqHandlerType,
   serverSettingsType,
-  webSocketHandlerType
+  webSocketRpcType
 } from "./server.type";
 
 import {Server, IncomingMessage, ServerResponse} from "http";
@@ -15,8 +15,7 @@ import {sessionInfoCtor, sessionInitCtor, sessionSetCtor} from "./session";
 import {ctxCtor} from "./ctx";
 import {sessionExpire, sessionUpdate} from "./db/db_session";
 import {dbProviderType} from "./db/db_provider.type";
-import {webSocketInit, webSocketType} from "./web_socket";
-import {serializableType} from "@nereid/anycore";
+import {webSocketInit} from "./web_socket";
 
 const handleNotFound = (res: ServerResponse) => {
   res.statusCode = 404;
@@ -37,9 +36,6 @@ export const serverFactoryCtor = (createServer: createServerType, setInterval: s
   dbProvider: dbProviderType,
   settings: serverSettingsType,
   handlerArray: contentHandlerType[],
-  wsHandlerRegistry?: Readonly<Record<string, webSocketHandlerType>>,
-  wsOnConnectHandler?: (ctxWs: ctxWebSocketType) => Promise<serializableType>,
-  wsOnCloseHandler?: (ctxWs: ctxWebSocketType) => Promise<serializableType>,
 ) => {
   const ha: contentHandlerType[] = [...handlerArray];
 
@@ -99,20 +95,11 @@ export const serverFactoryCtor = (createServer: createServerType, setInterval: s
   server.listen(+settings.port, settings.host);
 
 
-  let ws: webSocketType | undefined = undefined;
+  let webSocketRpc: webSocketRpcType | undefined = undefined;
 
-  if (wsHandlerRegistry) {
-    ws = webSocketInit(
-      wsHandlerRegistry,
-      server,
-      settings,
-      sessionInit,
-      dbProvider,
-      tuidFactory,
-      wsOnConnectHandler,
-      wsOnCloseHandler
-    );
+  if (settings.webSocket?.enabled) {
+    webSocketRpc = webSocketInit(server, settings, sessionInit, dbProvider, tuidFactory);
   }
 
-  return {server, ws};
+  return {server, webSocketRpc};
 };

@@ -1,23 +1,78 @@
 import {serializableType, starRepositoryCloneFactoryType, stateModifierFunctionType} from "@nereid/anycore";
+import {pubSubCtor, webSocketRpcType} from "@nereid/webcore";
+import {Duration} from "luxon";
 
-export const creeperClientCtor = (starRepositoryCloneFactory: starRepositoryCloneFactoryType, creeperEventRegistry: Readonly<Record<string, stateModifierFunctionType>>) => {
+export const creeperClientCtorCtor = (
+  starRepositoryCloneFactory: starRepositoryCloneFactoryType,
+  creeperEventRegistry: Readonly<Record<string, stateModifierFunctionType>>
+) => (
+  webSocketRpc: webSocketRpcType
+) => {
+  const onRebase = pubSubCtor<void>();
+
   const repo = starRepositoryCloneFactory(
     creeperEventRegistry,
     console.error,
     {}
   );
 
-  const wsSetState = async (params: serializableType) => {
+  const setState = async (params: serializableType) => {
     repo.serverState = params;
     return true;
   }
 
-  const wsRebase = async (params: serializableType) => {
+  const rebase = async (params: serializableType) => {
     repo.onRebase(params);
+    await onRebase.pub();
     return true;
   }
 
-  return {wsRebase, wsSetState, repo};
+  webSocketRpc.addModule({
+    name: 'creeper',
+    mode: 'client',
+    calls: {
+      setState,
+      rebase,
+    },
+  });
+
+  const getState = (timeout?: Duration) => webSocketRpc.call("creeper", "getState", {}, timeout) as Promise<{ state: serializableType, stateSignature: string }>;
+  const commit = (message: serializableType, timeout?: Duration) => webSocketRpc.call("creeper", "commit", message, timeout) as Promise<boolean>;
+
+  let name = '-';
+
+  return {
+    async syncState() {
+      const {state, stateSignature} = await getState();
+      repo.serverState = state;
+      if (repo.serverStateSignature !== stateSignature) {
+        throw new Error('SYNC_STATE_MISMATCH');
+      }
+    },
+    async updateLocation() {
+      const localCommit = repo.localCommit('updateV0', {
+        name,
+        location: window.location.pathname
+      });
+      return await commit(localCommit);
+    },
+    get name() {
+      return name;
+    },
+    set name(value: string) {
+      name = value;
+    },
+    get serverState() {
+      return repo.serverState;
+    },
+    get localState() {
+      return repo.localState;
+    },
+    onRebase(callback: () => Promise<void>) {
+      return onRebase.sub(callback);
+    }
+  };
 }
 
-export type creeperClientType = ReturnType<typeof creeperClientCtor>;
+export type creeperClientCtorType = ReturnType<typeof creeperClientCtorCtor>;
+export type creeperClientType = ReturnType<creeperClientCtorType>;

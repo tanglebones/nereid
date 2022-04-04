@@ -4,16 +4,26 @@
 
 import {serializableType} from '@nereid/anycore';
 import {DateTime, Duration} from 'luxon';
+import {pubSubCtor} from "./pub_sub.default";
 
-export type webSocketHandlerType = (params: serializableType) => Promise<serializableType>;
+// WebSocket is globally defined, like window. DO NOT `import WebSocket as 'ws';` !!!
 
 export type webSocketType = {
   call(callName: string, params: serializableType): Promise<serializableType>;
+};
+
+export type webSocketModuleType = {
+  name: string,
+  mode: 'client',
+  calls: Readonly<Record<string, (params: serializableType) => Promise<serializableType>>>
+};
+
+export type webSocketRpcType = {
   isActive(): boolean;
-  callCtor<TP extends serializableType, TR extends serializableType>(
-    callName: string,
-    defaultReturn?: Partial<TR & { error: string }>,
-  ): (params: TP) => Promise<Partial<TR & { error: string }>>;
+  addModule: (module: webSocketModuleType) => void;
+  onConnect: (callback: () => Promise<void>) => () => void;
+  onClose: (callback: () => Promise<void>) => () => void;
+  call: (module: string, method: string, args: serializableType, timeout?: Duration) => Promise<serializableType | undefined>;
 };
 
 type requestType = {
@@ -30,20 +40,24 @@ export let webSocketFactoryCtor = (
   clearTimeout: (handle: number) => void
 ) => (
   domain: string,
-  callRegistry: Readonly<Record<string, webSocketHandlerType>>,
-  onConnectHandler?: () => void,
-  onCloseHandler?: () => void,
-): webSocketType => {
+  onError: (message: string) => void,
+): webSocketRpcType => {
   const schema = window.location.protocol === 'http:' ? 'ws:' : 'wss:';
   const wsUrl = `${schema}//${domain}/ws`;
   let ws: WebSocket | undefined;
+
+  const onClosePubSub = pubSubCtor<void>();
+  const onConnectPubSub = pubSubCtor<void>();
+  const modules = {} as Record<string, webSocketModuleType>;
 
   let lastConnectionAttemptAt = DateTime.utc().minus({minutes: 2});
 
   const pending = {} as Record<string, requestType>;
   const sent = {} as Record<string, requestType>;
 
-  const isActive = () => ws?.readyState === WebSocket.OPEN;
+  const isActive = () => {
+    return ws?.readyState === WebSocket.OPEN;
+  };
 
   const processPending = () => {
     if (isActive()) {
@@ -58,6 +72,7 @@ export let webSocketFactoryCtor = (
   const processMessage = async (data: string) => {
     const packet: {
       id?: string;
+      m?: string;
       n?: string; // name
       a?: serializableType, // args
       s?: string, // status
@@ -65,9 +80,9 @@ export let webSocketFactoryCtor = (
       r?: serializableType // result
     } = JSON.parse(data);
     const status = packet.s?.[0];
-    if (packet.id && packet.n && status === '?') {
+    if (packet.id && packet.m && packet.n && status === '?') {
       try {
-        const call = callRegistry[packet.n];
+        const call = modules[packet.m]?.calls[packet.n];
         if (call) {
           const r = await call(packet.a);
           ws?.send(JSON.stringify({
@@ -109,7 +124,10 @@ export let webSocketFactoryCtor = (
   let timeoutHandle: number | undefined;
 
   const reconnect = () => {
-    if (timeoutHandle || isActive()) {
+    const active = isActive();
+    console.log('reconnect: ws.readyState is', ws?.readyState, 'active is', active);
+
+    if (timeoutHandle || active) {
       return;
     }
 
@@ -126,33 +144,32 @@ export let webSocketFactoryCtor = (
 
     lastConnectionAttemptAt = utc;
 
-    console.log('reconnecting. ws.readyState is', ws?.readyState);
     try {
       ws = new WebSocket(wsUrl, ['rpc1']);
     } catch (e) {
-      console.error(e);
+      onError(`${e}`);
       reconnect();
       return;
     }
 
     ws.onopen = () => {
-      onConnectHandler?.();
+      onConnectPubSub.pub();
       processPending();
     };
 
-    ws.onmessage = async (ev: MessageEvent) => {
-      await processMessage(ev.data as string);
+    ws.onmessage = (event: MessageEvent) => {
+      // noinspection JSIgnoredPromiseFromCall
+      processMessage(event.data as string);
     };
 
     ws.onclose = () => {
-      console.log('ws closed', ws?.readyState);
       ws = undefined;
-      onCloseHandler?.();
+      onClosePubSub.pub();
       reconnect();
     };
 
     ws.onerror = (ev: Event) => {
-      console.error(ev);
+      onError(`${ev}`);
       ws?.close();
     };
   };
@@ -168,9 +185,9 @@ export let webSocketFactoryCtor = (
     req?.reject('TIMEOUT');
   };
 
-  const call = async (callName: string, params: serializableType, timeout: Duration = defaultTimeout) => new Promise<serializableType>((resolve, reject) => {
+  const call = async (module: string, name: string, args: serializableType, timeout: Duration = defaultTimeout) => new Promise<serializableType>((resolve, reject) => {
     const id = tuidFactory();
-    const data = JSON.stringify({id, n: callName, a: params, s: '?'});
+    const data = JSON.stringify({id, m: module, n: name, a: args, s: '?'});
     pending[id] = {
       id,
       resolve,
@@ -186,26 +203,17 @@ export let webSocketFactoryCtor = (
     }
   });
 
-  const callCtor = <TP extends serializableType, TR extends serializableType>(
-    callName: string,
-    defaultReturn?: Partial<TR & { error: string }>,
-  ): (params: TP) => Promise<Partial<TR & { error: string }>> => {
-    const def = defaultReturn || {error: 'NO_REPLY'} as Partial<TR & { error: string }>;
+  const onClose = (callback: () => Promise<void>) => onClosePubSub.sub(callback);
+  const onConnect = (callback: () => Promise<void>) => onConnectPubSub.sub(callback);
 
-    return async function (params: TP): Promise<Partial<TR & { error: string }>> {
-      try {
-        const rawReply = await call(callName, params);
-        const reply = rawReply as Partial<TR & { error: string }>;
-        if (!reply) {
-          return def;
-        }
-        return reply;
-      } catch (e) {
-        console.error(e);
-        return def;
-      }
-    };
+  const addModule = (module: webSocketModuleType) => {
+    if (modules.hasOwnProperty(module.name)) {
+      throw new Error(`Module ${module.name} already added.`);
+    }
+    if (module.mode !== 'client') {
+      throw new Error(`Module ${module.name} is not a client module.`);
+    }
+    modules[module.name] = module;
   };
-
-  return {call, callCtor, isActive};
+  return {addModule, onClose, onConnect, call, isActive};
 };

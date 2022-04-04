@@ -1,8 +1,6 @@
-import {pubSubMessageHandlerType} from "./pub_sub";
-
-export type pubSubPlayType = {
-  pub(message: string): Promise<void>,
-  sub(handler: pubSubMessageHandlerType): () => void,
+export type pubSubPlayType<T> = {
+  pub(message: T): Promise<void>,
+  sub(handler: (message: T) => Promise<void>): () => void,
   play(n: number): Promise<void>,
 };
 
@@ -14,16 +12,17 @@ export type pubSubPlayType = {
  * @param registryFactory
  */
 export const pubSubPlayCtorCtor = (tuidFactory: () => string) =>
-  () => {    const pendingMessages: string[] = [];
-    const subs = {} as Record<string, pubSubMessageHandlerType>;
+  <T>() => {
+    const pendingMessages: T[] = [];
+    const subs = {} as Record<string, (message: T) => Promise<void>>;
 
-    const sub = (handler: pubSubMessageHandlerType) => {
+    const sub = (handler: (message: T) => Promise<void>) => {
       const id = tuidFactory();
       subs[id] = handler;
       return () => delete subs[id];
     }
 
-    const pub = async (message: string)=> {
+    const pub = async (message: T) => {
       pendingMessages.push(message);
     };
 
@@ -49,7 +48,6 @@ export const pubSubPlayCtorCtor = (tuidFactory: () => string) =>
       );
     };
 
-    const r: pubSubPlayType = {pub, sub, play};
-    return r;
+    return {pub, sub, play};
   };
 

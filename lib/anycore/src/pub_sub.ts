@@ -1,8 +1,6 @@
-export type pubSubMessageHandlerType = (message: string) => Promise<void>;
-
-export type pubSubType = {
-  pub(message: string): Promise<void>,
-  sub(handler: pubSubMessageHandlerType): () => void,
+export type pubSubType<T> = {
+  pub(message: T): Promise<void>,
+  sub(handler: (message: T) => Promise<void>): () => void,
 };
 
 /**
@@ -20,21 +18,20 @@ export type pubSubType = {
  * @param tuidFactory
  */
 export const pubSubCtorCtor = (tuidFactory: () => string) => {
-  return () => {
-    const subs = {} as Record<string, pubSubMessageHandlerType>;
+  return <T>() => {
+    const subs = {} as Record<string, (message: T) => Promise<void>>;
 
-    const sub = (handler: pubSubMessageHandlerType) => {
+    const sub = (handler: (message: T) => Promise<void>) => {
       const id = tuidFactory();
       subs[id] = handler;
       return () => delete subs[id];
     }
 
-    const pub = async (message: string) => {
+    const pub = async (message: T) => {
       await Promise.all(Object.values(subs).map(async handler => handler(message)));
     };
 
-    const r: pubSubType = {pub, sub};
-    return r;
+    return {pub, sub} as pubSubType<T>;
   };
 };
 

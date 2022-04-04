@@ -1,4 +1,3 @@
-import React from 'react';
 import {actionsType, exportActions, reactType} from "@nereid/webreactcore";
 
 export const counterCtor = (React: reactType) =>
@@ -20,4 +19,3 @@ export const counterCtor = (React: reactType) =>
       ;
   };
 
-export const Counter = counterCtor(React);

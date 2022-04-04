@@ -1,12 +1,12 @@
-import {ctxWebSocketType} from '@nereid/nodesrv';
+import {ctxWebSocketType, webSocketRpcType} from '@nereid/nodesrv';
 import {serializableType, starRepositoryServerFactoryType, stateModifierFunctionType} from '@nereid/anycore';
 import WebSocket from "ws";
 
-export const creeperServerCtor = (
+export const creeperServerCtorCtor = (
   nowMs: () => number,
   starRepositoryServerFactory: starRepositoryServerFactoryType,
-  creeperEventRegistry: Readonly<Record<string, stateModifierFunctionType>>,
-  ) => {
+  creeperEventRegistry: Readonly<Record<string, stateModifierFunctionType>>
+) => (webSocketRpc: webSocketRpcType) =>{
   const repo = starRepositoryServerFactory(
     creeperEventRegistry,
     console.error,
@@ -27,7 +27,7 @@ export const creeperServerCtor = (
     }
   };
 
-  const wsGetState = async (ctxWs: ctxWebSocketType, _params: serializableType): Promise<serializableType> => {
+  const getState = async (ctxWs: ctxWebSocketType, _params: serializableType): Promise<serializableType> => {
     subscribeToCommits(ctxWs);
     return {
       state: repo.state,
@@ -39,7 +39,7 @@ export const creeperServerCtor = (
     const toRemove = [] as string[];
     await Promise.all(Object.values(ctxWsSubs).map(async other => {
       if (other.ws?.readyState === WebSocket.OPEN) {
-        await other.call('creeper.rebase', msg);
+        await other.call('creeper', 'rebase', msg);
       } else {
         toRemove.push(other.user?.loginId ?? other.sessionId);
         delete ctxWsSubs[other.sessionId];
@@ -57,7 +57,7 @@ export const creeperServerCtor = (
     }
   };
 
-  const wsCommit = async (ctxWs: ctxWebSocketType, params: serializableType): Promise<serializableType> => {
+  const commit = async (ctxWs: ctxWebSocketType, params: serializableType): Promise<serializableType> => {
     const p = params as { event?: { params?: { loginId?: string, lastSeen?: number } } };
     if (!p.event?.params) {
       return false;
@@ -76,6 +76,18 @@ export const creeperServerCtor = (
     return true;
   };
 
-  return {wsGetState, wsCommit, repo, ctxWsSubs};
+  webSocketRpc.addModule({
+    name: 'creeper',
+    mode: 'server',
+    calls: {
+      commit,
+      getState,
+    }
+  });
+
+  return {
+    repo,
+    _: {ctxWsSubs},
+  };
 };
 

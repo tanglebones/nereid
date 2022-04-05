@@ -20,10 +20,10 @@ if (!appConnectionString) {
   throw new Error("PGDB_URL_APP not set");
 }
 
-const staffConnectionString = process.env.PGDB_URL_APP;
-if (!staffConnectionString) {
-  throw new Error("PGDB_URL_APP not set");
-}
+// const staffConnectionString = process.env.PGDB_URL_STAFF;
+// if (!staffConnectionString) {
+//   throw new Error("PGDB_URL_STAFF not set");
+// }
 
 eventLoopHealthMonitorCtor(
   nowMs,
